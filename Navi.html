@@ -208,6 +208,7 @@
     function fnRedrawCircle(){
         if(userCircle){
             userCircle.setMap(null);
+            userCircle = null;
         }
         // 지도에 표시할 원을 생성합니다
         var userCircle = new kakao.maps.Circle({
@@ -223,6 +224,7 @@
 
         // 지도에 원을 표시합니다 
         userCircle.setMap(map); 
+        alert("hi");
     }
 </script>
 </html>
