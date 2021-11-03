@@ -74,15 +74,14 @@
             maximumAge : Infinity
         })
         const watchID = navigator.geolocation.watchPosition((position) => {
-            if(watchTimer){
-                clearTimeout(watchTimer);
-            }
-            watchTimer = setTimeout(function(){
-                alert("Hi");
-                movingLoc.longitude = position.coords.longitude;
-                movingLoc.latitude = position.coords.latitude;
-                fnRedrawCircle();
-            }, 300)
+            
+            
+            alert("Hi");
+            movingLoc.longitude = position.coords.longitude;
+            movingLoc.latitude = position.coords.latitude;
+            fnRedrawCircle();
+            
+            
         })
         console.log("exist")
     }else{
