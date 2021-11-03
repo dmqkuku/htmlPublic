@@ -211,7 +211,7 @@
             userCircle = null;
         }
         // 지도에 표시할 원을 생성합니다
-        var userCircle = new kakao.maps.Circle({
+        userCircle = new kakao.maps.Circle({
             center : new kakao.maps.LatLng(movingLoc.latitude, movingLoc.longitude),  // 원의 중심좌표 입니다 
             radius: 50, // 미터 단위의 원의 반지름입니다 
             strokeWeight: 5, // 선의 두께입니다 
