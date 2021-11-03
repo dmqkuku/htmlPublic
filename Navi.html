@@ -32,7 +32,7 @@
             return this.#latitude;
         }
         set latitude(latitude){
-            if(this.isMutalbe || !this.#islatitudeInit){
+            if(this.#isMutalbe || !this.#islatitudeInit){
                 this.#latitude = latitude
                 this.#islatitudeInit = true;
             }
@@ -41,7 +41,7 @@
             return this.#longitude;
         }
         set longitude(longitude){
-            if(this.isMutable || !this.#islongitudeInit){
+            if(this.#isMutable || !this.#islongitudeInit){
                 this.#longitude = longitude
                 this.#islongitudeInit = true;
             }
