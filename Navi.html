@@ -78,6 +78,7 @@
                 clearTimeout(watchTimer);
             }
             watchTimer = setTimeout(function(){
+                alert("Hi");
                 movingLoc.longitude = position.coords.longitude;
                 movingLoc.latitude = position.coords.latitude;
                 fnRedrawCircle();
