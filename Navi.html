@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Document</title>
+</head>
+<body>
+    <h1>Hello</h1>
+    <hr/>
+    <div id="map" style="width:600px;height:600px;">
+    </div>
+</body>
+<!-- <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf"></script> -->
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf&libraries=services,drawing"></script>
+<script>
+    class myGeoLoc{
+        #latitude;
+        #longitude;
+        #islatitudeInit = false;
+        #islongitudeInit = false;
+        #isMutable = false;
+        constructor(latitude, longitude, isMutable = false){
+            this.#latitude = latitude;
+            this.#longitude = longitude;
+            this.#isMutable = isMutable;
+        }
+        //valid 위도 경도인지 체크하는 로직이 필요할지?
+        get latitude(){
+            return this.#latitude;
+        }
+        set latitude(latitude){
+            if(this.isMutalbe || !this.#islatitudeInit){
+                this.#latitude = latitude
+                this.#islatitudeInit = true;
+            }
+        }
+        get longitude(){
+            return this.#longitude;
+        }
+        set longitude(longitude){
+            if(this.isMutable || !this.#islongitudeInit){
+                this.#longitude = longitude
+                this.#islongitudeInit = true;
+            }
+        }
+    }
+    //global variables start
+    let fromGeoLoc;
+    let toGeoLoc;
+    let movingLoc;
+    var userCircle;
+
+    let geocoder = new kakao.maps.services.Geocoder();
+    //global variables end
+
+    var watchTimer;
+
+    //geolcation
+    if('geolocation' in navigator){
+        navigator.geolocation.getCurrentPosition((position) => {
+            console.log(position.coords.latitude, position.coords.longitude)
+            fromGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude);
+            movingLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
+            //console.log(geocoder.coord2Address(position.coords.longitude, position.coords.latitude))
+            fnInitMap();
+        },(error) => {
+            console.log(error)
+        },{
+            enableHighAccuracy : true,
+            timeout : Infinity,
+            maximumAge : Infinity
+        })
+        const watchID = navigator.geolocation.watchPosition((position) => {
+            if(watchTimer){
+                clearTimeout(watchTimer);
+            }
+            watchTimer = setTimeout(function(){
+                movingLoc.longitude = position.coords.longitude;
+                movingLoc.latitude = position.coords.latitude;
+                fnRedrawCircle();
+            }, 300)
+        })
+        console.log("exist")
+    }else{
+        console.log("not")
+        //37.496028 127.0306009
+        fromGeoLoc = new myGeoLoc(37.496028, 127.0306009);
+        movingGeoLoc = new myGeoLoc(37.496028, 127.0306009, true);
+        fnInitMap()
+    }
+
+    function fnInitMap(){
+
+        var container = document.getElementById('map');
+        var options = {
+            center: new kakao.maps.LatLng(33.450701, 126.570667),
+            level: 3
+        };
+    
+        var map = new kakao.maps.Map(container, options);
+        //지도 최대 최소 축소 배율 설정
+        map.setMaxLevel(10);
+        map.setMinLevel(1);
+    
+        //ROADMAP, SKYVIEW, HYBRID, ROADVIEW, OVERLAY, TRAFIC, TERRAIN, BICYCLE, USE_DISTRICT
+        //map.setMapTypeId()
+    
+        //pixel 만큼 부드럽게 중심 이동
+        //map.panBy(100, 100);
+    
+        var moveLatLng = new kakao.maps.LatLng(fromGeoLoc.latitude, fromGeoLoc.longitude);
+        map.panTo(moveLatLng, 0)
+    
+        const zoomControl = new kakao.maps.ZoomControl();
+        map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT)
+    
+        const mapTypeControl = new kakao.maps.MapTypeControl();
+        map.addControl(zoomControl, kakao.maps.ControlPosition.TOP)
+    
+        //map.relayout()
+    
+        //places        
+        // const places = new kakao.maps.services.Places();
+        // places.setMap(map);
+        // var searchCallBack = function(result, status){
+        //     if(status === kakao.maps.services.Status.OK){
+        //         console.log(result);
+        //     }else if(status === kakao.maps.services.Status.ZERO_RESULT){
+        //         console.log("no Search Result")
+        //     }
+        // }
+        // places.keywordSearch("판교", searchCallBack);
+    
+        // //search ends
+        
+        manager = new kakao.maps.drawing.DrawingManager({
+            map: map,
+            drawingMode: [
+                kakao.maps.drawing.OverlayType.MARKER
+            ],
+            markerOptions: {
+                draggable: true,
+                removable: true,
+                markerImages: [
+                    null, // API에서 제공하는 기본 마커 이미지
+                    {
+                        src: 'https://t1.daumcdn.net/localimg/localimages/07/2009/map/icon/ico_mn_13.png',
+                        width: 31,
+                        height: 35,
+                        shape: 'rect',
+                        coords: '0,0,31,35',
+                        hoverImage: {
+                            src: 'https://t1.daumcdn.net/localimg/localimages/07/2012/img/marker_normal.png',
+                            width: 33,
+                            height: 36,
+                            offsetX: 12,
+                            offsetY: 36,
+                            spriteWidth: 644,
+                            spriteHeight: 946,
+                            spriteOriginX: 10,
+                            spriteOriginY: 10
+                        },
+                        dragImage: {
+                            src: 'https://t1.daumcdn.net/localimg/localimages/07/2012/attach/pc_img/ico_comm.png',
+                            width : 20, // 마커 크기
+                            height : 20, // 마커 크기
+                            offsetX : 10, // 지도에 고정시킬 이미지 내 위치 좌표
+                            offsetY : 20, // 지도에 고정시킬 이미지 내 위치 좌표
+                            spriteWidth : 118, // 이미지 전체 크기
+                            spriteHeight : 111, // 이미지 전체 크기
+                            spriteOriginX : 0, // 이미지 중 마커로 사용할 위치
+                            spriteOriginY : 90 // 이미지 중 마커로 사용할 위치
+                        }
+                    }
+                ]
+            }
+        });
+        var toMarker;
+        
+        kakao.maps.event.addListener(map, "click", function(mouseEvent){
+            if(toMarker){
+                toMarker.setMap(null)
+            }
+            toMarker = new kakao.maps.Marker({
+                position : mouseEvent.latLng
+            })
+            toMarker.setMap(map)
+        })
+
+        
+        
+       
+        //지도위에 marker 표시
+        var fromMarker = new kakao.maps.Marker({
+            position : new kakao.maps.LatLng(fromGeoLoc.latitude, fromGeoLoc.longitude)
+        })
+        fromMarker.setMap(map);
+
+        var toMarker = new kakao.maps.Marker({
+
+        })
+
+        
+    }
+    function fnRedrawCircle(){
+        if(userCircle){
+            userCircle.setMap(null);
+        }
+        // 지도에 표시할 원을 생성합니다
+        var userCircle = new kakao.maps.Circle({
+            center : new kakao.maps.LatLng(movingLoc.latitude, movingLoc.longitude),  // 원의 중심좌표 입니다 
+            radius: 10, // 미터 단위의 원의 반지름입니다 
+            strokeWeight: 5, // 선의 두께입니다 
+            strokeColor: '#75B8FA', // 선의 색깔입니다
+            strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+            strokeStyle: 'dashed', // 선의 스타일 입니다
+            fillColor: '#CFE7FF', // 채우기 색깔입니다
+            fillOpacity: 0.7  // 채우기 불투명도 입니다   
+        }); 
+
+        // 지도에 원을 표시합니다 
+        userCircle.setMap(map); 
+    }
+</script>
+</html>
