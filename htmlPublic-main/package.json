@@ -11,9 +11,9 @@
   "bin" : "./back/NaviServer.js",
   "pkg": {
     "assets": [
-      "front/*"
+      "./front/*"
     ],
-    "scripts" : "back/*.js"
+    "scripts" : "./back/*.js"
   },
   "author": "",
   "license": "ISC",
