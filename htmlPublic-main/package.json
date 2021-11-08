@@ -14,7 +14,7 @@
       "front/*"
     ],
     "scripts": "back/*.js",
-    "targets" : ["node16-linux"]
+    "targets" : ["node16-linux-x64"]
   },
   "author": "JHS",
   "license": "ISC",
