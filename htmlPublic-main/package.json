@@ -15,7 +15,7 @@
     ],
     "scripts": "back/*.js"
   },
-  "author": "",
+  "author": "JHS",
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
