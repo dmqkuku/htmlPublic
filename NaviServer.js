@@ -33,7 +33,7 @@ app.use(express.json());
 const port = 3000;
 const __dirname = path.resolve();
 
-app.get("/", (request, response) => {
+app.get("/*", (request, response) => {
     response.sendFile(path.join(__dirname + "/Navi2.html"));
 })
 
