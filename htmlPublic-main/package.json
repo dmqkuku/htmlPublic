@@ -1,0 +1,25 @@
+{
+  "name": "nodeserver1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./back/NaviServer.js",
+    "build": "pkg ./package.json"
+  },
+  "bin" : "./back/NaviServer.js",
+  "pkg": {
+    "assets": [
+      "front/*"
+    ],
+    "scripts" : "back/*.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "node-fetch": "^3.0.0"
+  },
+  "type": "module"
+}
