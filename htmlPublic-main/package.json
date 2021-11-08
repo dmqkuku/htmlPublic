@@ -21,5 +21,8 @@
     "express": "^4.17.1",
     "node-fetch": "^3.0.0"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies" : {
+    "pkg" : "^5.4.1"
+  }
 }
