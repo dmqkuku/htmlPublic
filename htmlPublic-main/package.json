@@ -8,21 +8,23 @@
     "start": "node ./back/NaviServer.js",
     "build": "pkg ./package.json"
   },
-  "bin" : "./back/NaviServer.js",
+  "bin": "./back/NaviServer.js",
   "pkg": {
     "assets": [
-      "./front/*"
+      "front/*"
     ],
-    "scripts" : "./back/*.js"
+    "scripts": "back/*.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
-    "node-fetch": "^3.0.0"
+    "node-fetch": "^3.0.0",
+    "os": "^0.1.2",
+    "path": "^0.12.7"
   },
   "type": "module",
-  "devDependencies" : {
-    "pkg" : "^5.4.1"
+  "devDependencies": {
+    "pkg": "^5.4.1"
   }
 }
