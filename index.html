@@ -8,9 +8,12 @@
 </head>
 <body>
     <form id="myForm" method="get" action="/index">
-        <button type="button">Submit</button>
+        <button type="button" id="btn">Submit</button>
     </form>
     <script>
+        document.getElmentById("btn").addEventListener("click", function(){
+            docuemnt.forms["myForm"].submit();
+        })
     </script>
 </body>
 </html>
