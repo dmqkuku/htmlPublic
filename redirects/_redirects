@@ -1,5 +1,2 @@
 # Redirects from what the browser requests to what we serve
-[[redirects]]
-	from = "/index"
-	to = "/index.do"
-	
+/index	/index.do
