@@ -13,7 +13,8 @@
     "assets": [
       "front/*"
     ],
-    "scripts": "back/*.js"
+    "scripts": "back/*.js",
+    "targets" : ["node14-linux-arm64"]
   },
   "author": "JHS",
   "license": "ISC",
