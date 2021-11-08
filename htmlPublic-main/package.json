@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ./back/NaviServer.js",
-    "build": "pkg ./package.json"
+    "build": "pkg ."
   },
   "bin": "./back/NaviServer.js",
   "pkg": {
@@ -14,15 +14,17 @@
       "front/*"
     ],
     "scripts": "back/*.js",
-    "targets" : ["node16-linux-x64"]
+    "targets": [
+      "node16-linux-x64"
+    ]
   },
-  "author": "JHS",
+  "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
+    "path": "^0.12.7",
     "node-fetch": "^3.0.0",
-    "os": "^0.1.2",
-    "path": "^0.12.7"
+    "os": "^0.1.2"
   },
   "type": "module",
   "devDependencies": {
