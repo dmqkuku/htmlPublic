@@ -8,7 +8,7 @@ const fetch = require("node-fetch");
 
 const app = express();
 app.use(express.json());
-
+app.use(express.static("front"));
 const port = 3000;
 if(!__dirname){
     __dirname = path.resolve();
