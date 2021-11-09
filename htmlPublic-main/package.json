@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ./back/NaviServer.js",
-    "build": "pkg ."
+    "build": "pkg ./back/NaviServer.js"
   },
   "bin": "./back/NaviServer.js",
   "pkg": {
