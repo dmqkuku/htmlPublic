@@ -427,7 +427,7 @@
     let tempKey;
     let tempStartNode;
     let tempEndNode;
-    const bufferRange = 5;
+    const bufferRange = 15;
     function getClosestNode(currLat, currLong, lineNodes){
         if(polyline){
             if(!closestNodeTimer){
@@ -498,9 +498,9 @@
                         const bit_result = bit_from | bit_to | bit_middle;
                         const valid_bit_field = [4, 8, 12, 16, 20, 24, 28];
                         if(bit_result == 28){
-                            console.log(distFrom2CurrLoc > bufferRange ? "too Far from FromNode" : '');
-                            console.log(distTo2CurrLoc > bufferRange ? "too far from toNode" : '');
-                            console.log(distMiddel2Curr > bufferRange ? "too far from middleNode" : '');
+                            console.log(distFrom2CurrLoc > bufferRange ? "too Far from FromNode" + distFrom2CurrLoc : '');
+                            console.log(distTo2CurrLoc > bufferRange ? "too far from toNode" + distTo2CurrLoc : '');
+                            console.log(distMiddel2Curr > bufferRange ? "too far from middleNode" + distMiddel2Curr : '');
                             alert("You are out of range");
                             naviagtor.geolocation.clearWatch(watchID);
                         }else{
