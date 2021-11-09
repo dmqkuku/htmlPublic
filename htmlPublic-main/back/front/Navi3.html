@@ -491,10 +491,18 @@
                             resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, currLine.endNode, currLine.startNode);
                         //둔각이 없다!
                         }
-                        if(distFrom2CurrLoc > bufferRange && distTo2CurrLoc > bufferRange && distMiddel2Curr > bufferRange){
+
+                        const bit_from = distFrom2CurrLoc > bufferRange ? 1 << 2 : 0;
+                        const bit_to = distTo2CurrLoc > bufferRange ? 1 << 3 : 0;
+                        const bit_middle = distMiddel2Curr > bufferRange ? 1 << 4 : 0;
+                        const bit_result = bit_from | bit_to | bit_middle;
+                        const valid_bit_field = [4, 8, 12, 16, 20, 24, 28];
+                        if(valid_bit_field.indexOf(bit_result) < 0){
                             console.log(distFrom2CurrLoc > bufferRange ? "too Far from FromNode" : '');
                             console.log(distTo2CurrLoc > bufferRange ? "too far from toNode" : '');
                             console.log(distMiddel2Curr > bufferRange ? "too far from middleNode" : '');
+                            alert("You are out of range");
+                            naviagtor.geolocation.clearWatch(watchID);
                         }else{
                             movingCircle = new kakao.maps.Circle({
                                 center : resultGeoLoc.toKakoLatLng(),
