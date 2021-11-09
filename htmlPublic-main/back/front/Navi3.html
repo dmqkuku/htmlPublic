@@ -497,7 +497,7 @@
                         const bit_middle = distMiddel2Curr > bufferRange ? 1 << 4 : 0;
                         const bit_result = bit_from | bit_to | bit_middle;
                         const valid_bit_field = [4, 8, 12, 16, 20, 24, 28];
-                        if(valid_bit_field.indexOf(bit_result) < 0){
+                        if(bit_result == 28){
                             console.log(distFrom2CurrLoc > bufferRange ? "too Far from FromNode" : '');
                             console.log(distTo2CurrLoc > bufferRange ? "too far from toNode" : '');
                             console.log(distMiddel2Curr > bufferRange ? "too far from middleNode" : '');
