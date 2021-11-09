@@ -504,6 +504,9 @@
                             alert("You are out of range");
                             naviagtor.geolocation.clearWatch(watchID);
                         }else{
+                            if(movingCircle){
+                                movingCircle.setMap(null);
+                            }
                             movingCircle = new kakao.maps.Circle({
                                 center : resultGeoLoc.toKakoLatLng(),
                                 radius: 12, // 미터 단위의 원의 반지름입니다 
