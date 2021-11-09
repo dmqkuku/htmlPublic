@@ -19,7 +19,7 @@ app.get("/", (request, response) => {
     response.sendFile(path.join(__dirname + "/front/index.html"));
 })
 app.get("/index", (request, response) => {
-    response.sendFile(path.join(__dirname + "/front/Navi2.html"));
+    response.sendFile(path.join(__dirname + "/front/Navi3.html"));
 })
 
 app.post("/findPath", (request, response) => {
