@@ -22,9 +22,10 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
-    "path": "^0.12.7",
     "node-fetch": "^3.0.0",
-    "os": "^0.1.2"
+    "os": "^0.1.2",
+    "path": "^0.12.7",
+    "pkg-fetch": "^3.2.4"
   },
   "type": "module",
   "devDependencies": {
