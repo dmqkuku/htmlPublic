@@ -416,9 +416,18 @@
         userCircle.setMap(map); 
         
     }
-    let tempCircleReserve = [];
     let closestNodeTimer;
     let movingCircle;
+    let startNode;
+    let currLine = {
+        isEmpty : true,
+    };
+    let isInit = true;
+    let isEndOfLine = false;
+    let tempKey;
+    let tempStartNode;
+    let tempEndNode;
+    const bufferRange = 5;
     function getClosestNode(currLat, currLong, lineNodes){
         if(polyline){
             if(!closestNodeTimer){
@@ -428,24 +437,24 @@
                     let closestNode = new myGeoLoc(0, 0, true);
                     // let scndClosestDist = Infinity;
                     // let scndClosestNode;
-                    let isFirstEncounter = true;
+
                     let idx = 1;
-                    for([key, value] of lineNodes){
-                        //console.log(key + ":" + idx);
-                        idx += 1;
-                        const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, value.fromNode.latitude, value.fromNode.longitude);
-                        const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, value.toNode.latitude, value.toNode.longitude);
-                        const distTo2From = getDistanceFromDeg(value.fromNode.latitude, value.fromNode.longitude, value.toNode.latitude, value.toNode.longitude)
+                    //init 이 끝난 후...
+                    if(!isInit){
+                        //currLine.startNode
+                        //currLine.endNode
+                        const fromLat = currLine.startNode.latitude;
+                        const fromLng = currLine.startNode.longitude;
+                        const toLat = currLine.endNode.latitude;
+                        const toLng = currLine.endNode.longitude;
+                        const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, fromLat, fromLng);
+                        const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, toLat, toLng);
+                        const distTo2From = getDistanceFromDeg(fromLat, fromLng, toLat, toLng)
 
                         const cosCurrLoc = getCosFrom3Length(distFrom2CurrLoc, distTo2CurrLoc, distTo2From);
                         const cosFrom = getCosFrom3Length(distFrom2CurrLoc, distTo2From, distTo2CurrLoc);
                         const cosTo = getCosFrom3Length(distTo2CurrLoc, distTo2From, distFrom2CurrLoc);
 
-                        //console.log("cos Curr: " + cosCurrLoc);
-                        //console.log("cost From :" + cosFrom);
-                        //console.log("cos To : " + cosTo);
-                        //만약 -인 각이 있다면 해당 각이 둔각임...
-                        //Obtuse == 둔각
                         const currIsObtuse = 1 << 2;
                         const fromIsObtuse = 1 << 3;
                         const toIsObtuse = 1 << 4; 
@@ -465,74 +474,177 @@
                             //console.log(verticalLeng);
                             //console.log(tempHalfLengthFrom);
                             let horizontalLengFrom = tempHalfLengthFrom;
-                            resultGeoLoc = getIntrapolationPoint(distTo2From - tempHalfLengthFrom, tempHalfLengthFrom, value.toNode, value.fromNode);
+                            resultGeoLoc = getIntrapolationPoint(distTo2From - tempHalfLengthFrom, tempHalfLengthFrom, currLine.endNode, currLine.startNode);
                         }else if(bitResult == fromIsObtuse){
                             //console.log("bitResult ", bitResult);
                             horizontalLeng = cosTo * distTo2CurrLoc;
                             verticalLeng = Math.sqrt(getSquare(distTo2CurrLoc) - getSquare(verticalLeng));
                                                                 //close far
-                            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, value.fromNode, value.toNode);
+                            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, currLine.startNode, currLine.endNode);
                         }else if(bitResult == toIsObtuse){
                             //console.log("bitResult ", bitResult);
                             horizontalLeng = cosFrom * distFrom2CurrLoc;
                             verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(verticalLeng));
-                            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, value.toNode, value.fromNode);
+                            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, currLine.endNode, currLine.startNode);
                         //둔각이 없다!
                         }
-                        //console.log(resultGeoLoc);
-                        //삼각형 그리기
-                        // if(isFirstEncounter){
-                        //     isFirstEncounter = false;
-                        //     const polygonPath = [
-                        //         new kakao.maps.LatLng(currLat, currLong),
-                        //         new kakao.maps.LatLng(value.fromNode.latitude, value.fromNode.longitude),
-                        //         new kakao.maps.LatLng(value.toNode.latitude, value.toNode.longitude)
-                        //     ]
-                        //     const polygon = new kakao.maps.Polygon({
-                        //         path : polygonPath,
-                        //         strokeWeight : 3,
-                        //         strokeColor : '#39DE2A',
-                        //         strokeOpacity : 0.8,
-                        //         strokeStyle : 'longdash',
-                        //         fillColor : "#A2FF99",
-                        //         fillOpacity : 0.7
-                        //     })
-                        //     polygon.setMap(map);
-                        // }
-                        // const newDot = new kakao.maps.Circle({
-                        //     center : resultGeoLoc.toKakoLatLng(),
-                        //     radius : 8,
-                        //     strokeWeight: 3, // 선의 두께입니다 
-                        //     strokeColor: '#FE2E64', // 선의 색깔입니다
-                        //     strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                        //     strokeStyle: 'dashed', // 선의 스타일 입니다
-                        //     fillColor: '#FE2E64', // 채우기 색깔입니다
-                        //     fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                        // })
-                        // console.log(resultGeoLoc.latitude, resultGeoLoc.longitude)
-                        // newDot.setMap(map);
-                        const distToCurr = calDist2Nodes(new myGeoLoc(currLat, currLong), resultGeoLoc);
-                        if(distToCurr < closestDist ){
-                            closestDist = distToCurr;
-                            closestNode.latitude = resultGeoLoc.latitude;
-                            closestNode.longitude = resultGeoLoc.longitude;
+                        movingCircle = new kakao.maps.Circle({
+                            center : resultGeoLoc.toKakoLatLng(),
+                            radius: 12, // 미터 단위의 원의 반지름입니다 
+                            strokeWeight: 3, // 선의 두께입니다 
+                            strokeColor: '#111111', // 선의 색깔입니다
+                            strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                            strokeStyle: 'dashed', // 선의 스타일 입니다
+                            fillColor: '#111111', // 채우기 색깔입니다
+                            fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                        })
+                        movingCircle.setMap(map);
+
+                        //check 
+                        let distResult2End = getDistanceFromDeg(resultGeoLoc.latitude, resultGeoLoc.longitude, currLine.endNode.latitude, currLine.endNode.longitude);
+                        if(distResult2End <= bufferRange){
+                            isEndOfLine = true;
                         }
                     }
-                    //for ends
-                    if(movingCircle){
-                        movingCircle.setMap(null)
+                    if(isEndOfLine){
+                        const nodeIdx = Number(currLine.nodeName.split("-")[1]) + 1;
+                        if(lineNodes.has("node-" + nodeIdx)){
+                            const nextValue = lineNodes.get("node-" + nodeIdx);
+                            currLine.startNode = nextValue.fromNode;
+                            currLine.endNode = nextValue.toNode;
+                            currLine.nodeName = "node-" + nodeIdx;
+                            ;
+                        }else{
+                            alert("길찾기 종료!")
+                            naviagtor.geolocation.clearWatch(watchID);
+                        }
+                        isEndOfLine = false;
                     }
-                    movingCircle = new kakao.maps.Circle({
-                        center : closestNode.toKakoLatLng(),
-                        radius: 12, // 미터 단위의 원의 반지름입니다 
-                        strokeWeight: 3, // 선의 두께입니다 
-                        strokeColor: '#111111', // 선의 색깔입니다
-                        strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                        strokeStyle: 'dashed', // 선의 스타일 입니다
-                        fillColor: '#111111', // 채우기 색깔입니다
-                        fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                    })
-                    movingCircle.setMap(map);
+                    //init시 하위 소스 사용
+                    if(isInit){
+                        for([key, value] of lineNodes){
+                            //console.log(key + ":" + idx);
+                            //idx += 1;
+                            const fromLat = value.fromNode.latitude;
+                            const fromLng = value.fromNode.longitude;
+                            const toLat = value.toNode.latitude;
+                            const toLng = value.toNode.longitude;
+                            const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, fromLat, fromLng);
+                            const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, toLat, toLng);
+                            const distTo2From = getDistanceFromDeg(fromLat, fromLng, toLat, toLng)
+    
+                            // const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, value.fromNode.latitude, value.fromNode.longitude);
+                            // const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, value.toNode.latitude, value.toNode.longitude);
+                            // const distTo2From = getDistanceFromDeg(value.fromNode.latitude, value.fromNode.longitude, value.toNode.latitude, value.toNode.longitude)
+    
+                            const cosCurrLoc = getCosFrom3Length(distFrom2CurrLoc, distTo2CurrLoc, distTo2From);
+                            const cosFrom = getCosFrom3Length(distFrom2CurrLoc, distTo2From, distTo2CurrLoc);
+                            const cosTo = getCosFrom3Length(distTo2CurrLoc, distTo2From, distFrom2CurrLoc);
+    
+                            //console.log("cos Curr: " + cosCurrLoc);
+                            //console.log("cost From :" + cosFrom);
+                            //console.log("cos To : " + cosTo);
+                            //만약 -인 각이 있다면 해당 각이 둔각임...
+                            //Obtuse == 둔각
+                            const currIsObtuse = 1 << 2;
+                            const fromIsObtuse = 1 << 3;
+                            const toIsObtuse = 1 << 4; 
+                            let isCurrObtuse = Math.sign(cosCurrLoc) == -1 ? currIsObtuse : 0;
+                            let isFromObtuse = Math.sign(cosFrom) == -1 ? fromIsObtuse : 0;
+                            let isToObtuse = Math.sign(cosTo) == -1 ? toIsObtuse : 0;
+                            let bitResult = isCurrObtuse | isFromObtuse | isToObtuse;
+                            
+                            let verticalLeng;
+                            let horizontalLeng;
+                            let resultGeoLoc;
+                            //console.log(value.name + "|||||||||||||");
+                            if(bitResult == currIsObtuse || bitResult == 0){
+                               // console.log("bitResult" , bitResult)
+                                let tempHalfLengthFrom = cosFrom * distFrom2CurrLoc;
+                                verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(tempHalfLengthFrom));
+                                //console.log(verticalLeng);
+                                //console.log(tempHalfLengthFrom);
+                                let horizontalLengFrom = tempHalfLengthFrom;
+                                resultGeoLoc = getIntrapolationPoint(distTo2From - tempHalfLengthFrom, tempHalfLengthFrom, value.toNode, value.fromNode);
+                            }else if(bitResult == fromIsObtuse){
+                                //console.log("bitResult ", bitResult);
+                                horizontalLeng = cosTo * distTo2CurrLoc;
+                                verticalLeng = Math.sqrt(getSquare(distTo2CurrLoc) - getSquare(verticalLeng));
+                                                                    //close far
+                                resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, value.fromNode, value.toNode);
+                            }else if(bitResult == toIsObtuse){
+                                //console.log("bitResult ", bitResult);
+                                horizontalLeng = cosFrom * distFrom2CurrLoc;
+                                verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(verticalLeng));
+                                resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, value.toNode, value.fromNode);
+                            //둔각이 없다!
+                            }
+                            //console.log(resultGeoLoc);
+                            //삼각형 그리기
+                            // if(isFirstEncounter){
+                            //     isFirstEncounter = false;
+                            //     const polygonPath = [
+                            //         new kakao.maps.LatLng(currLat, currLong),
+                            //         new kakao.maps.LatLng(value.fromNode.latitude, value.fromNode.longitude),
+                            //         new kakao.maps.LatLng(value.toNode.latitude, value.toNode.longitude)
+                            //     ]
+                            //     const polygon = new kakao.maps.Polygon({
+                            //         path : polygonPath,
+                            //         strokeWeight : 3,
+                            //         strokeColor : '#39DE2A',
+                            //         strokeOpacity : 0.8,
+                            //         strokeStyle : 'longdash',
+                            //         fillColor : "#A2FF99",
+                            //         fillOpacity : 0.7
+                            //     })
+                            //     polygon.setMap(map);
+                            // }
+                            // const newDot = new kakao.maps.Circle({
+                            //     center : resultGeoLoc.toKakoLatLng(),
+                            //     radius : 8,
+                            //     strokeWeight: 3, // 선의 두께입니다 
+                            //     strokeColor: '#FE2E64', // 선의 색깔입니다
+                            //     strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                            //     strokeStyle: 'dashed', // 선의 스타일 입니다
+                            //     fillColor: '#FE2E64', // 채우기 색깔입니다
+                            //     fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                            // })
+                            // console.log(resultGeoLoc.latitude, resultGeoLoc.longitude)
+                            // newDot.setMap(map);
+                            const distToCurr = calDist2Nodes(new myGeoLoc(currLat, currLong), resultGeoLoc);
+                            if(distToCurr < closestDist ){
+                                closestDist = distToCurr;
+                                closestNode.latitude = resultGeoLoc.latitude;
+                                closestNode.longitude = resultGeoLoc.longitude;
+    
+                                tempStartNode = value.fromNode;
+                                tempEndNode = value.toNode;
+                                tempKey = key;
+                            }
+                        }
+                        //for ends
+                        if(movingCircle){
+                            movingCircle.setMap(null)
+                        }
+                        if(isInit){
+                            isInit = false;
+                            startNode = closestNode;
+                            currLine.startNode = tempStartNode;
+                            currLine.endNode = tempEndNode;
+                            currLine.nodeName = tempKey;
+                        }
+                        movingCircle = new kakao.maps.Circle({
+                            center : closestNode.toKakoLatLng(),
+                            radius: 12, // 미터 단위의 원의 반지름입니다 
+                            strokeWeight: 3, // 선의 두께입니다 
+                            strokeColor: '#111111', // 선의 색깔입니다
+                            strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                            strokeStyle: 'dashed', // 선의 스타일 입니다
+                            fillColor: '#111111', // 채우기 색깔입니다
+                            fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                        })
+                        movingCircle.setMap(map);
+                    }
                 })
             }
         }
