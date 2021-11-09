@@ -451,6 +451,9 @@
                         const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, toLat, toLng);
                         const distTo2From = getDistanceFromDeg(fromLat, fromLng, toLat, toLng)
 
+                        //middle...
+                        const distMiddel2Curr = getDistanceFromDeg(currLat, currLong, (fromLat + toLat)/2, (fromLng + toLng)/2)
+
                         const cosCurrLoc = getCosFrom3Length(distFrom2CurrLoc, distTo2CurrLoc, distTo2From);
                         const cosFrom = getCosFrom3Length(distFrom2CurrLoc, distTo2From, distTo2CurrLoc);
                         const cosTo = getCosFrom3Length(distTo2CurrLoc, distTo2From, distFrom2CurrLoc);
@@ -488,17 +491,23 @@
                             resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, currLine.endNode, currLine.startNode);
                         //둔각이 없다!
                         }
-                        movingCircle = new kakao.maps.Circle({
-                            center : resultGeoLoc.toKakoLatLng(),
-                            radius: 12, // 미터 단위의 원의 반지름입니다 
-                            strokeWeight: 3, // 선의 두께입니다 
-                            strokeColor: '#111111', // 선의 색깔입니다
-                            strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                            strokeStyle: 'dashed', // 선의 스타일 입니다
-                            fillColor: '#111111', // 채우기 색깔입니다
-                            fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                        })
-                        movingCircle.setMap(map);
+                        if(distFrom2CurrLoc > bufferRange && distTo2CurrLoc > bufferRange && distMiddel2Curr > bufferRange){
+                            console.log(distFrom2CurrLoc > bufferRange ? "too Far from FromNode" : '');
+                            console.log(distTo2CurrLoc > bufferRange ? "too far from toNode" : '');
+                            console.log(distMiddel2Curr > bufferRange ? "too far from middleNode" : '');
+                        }else{
+                            movingCircle = new kakao.maps.Circle({
+                                center : resultGeoLoc.toKakoLatLng(),
+                                radius: 12, // 미터 단위의 원의 반지름입니다 
+                                strokeWeight: 3, // 선의 두께입니다 
+                                strokeColor: '#111111', // 선의 색깔입니다
+                                strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                                strokeStyle: 'dashed', // 선의 스타일 입니다
+                                fillColor: '#111111', // 채우기 색깔입니다
+                                fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                            })
+                            movingCircle.setMap(map);
+                        }
 
                         //check 
                         let distResult2End = getDistanceFromDeg(resultGeoLoc.latitude, resultGeoLoc.longitude, currLine.endNode.latitude, currLine.endNode.longitude);
