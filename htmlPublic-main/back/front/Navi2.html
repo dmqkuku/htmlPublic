@@ -364,9 +364,10 @@
 
         //add Event Listener end
     }
+    let watchID;
     function fnInitMovingCircle(paths, nodes){
         if(!watchID){
-            const watchID = navigator.geolocation.watchPosition((position) => {
+            watchID = navigator.geolocation.watchPosition((position) => {
                 //inital value
                 //movingLoc.longitude = position.coords.longitude;
                 //movingLoc.latitude = position.coords.latitude;
@@ -495,6 +496,7 @@
                         fillColor: '#111111', // 채우기 색깔입니다
                         fillOpacity: 0.7  // 채우기 불투명도 입니다 
                     })
+                    movingCircle.setMap(map);
                 })
             }
         }
