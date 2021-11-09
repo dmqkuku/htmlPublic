@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Document</title>
+</head>
+<body>
+    <h1>Hello</h1>
+    <button id="findPath">길찾기 시작</button>
+    <hr/>
+    <div id="map" style="width:600px;height:600px;">
+    </div>
+</body>
+<!-- 각 선분과 노드의 끝자락을 이용하여... 근처에 있는 동안 움직일 때마다 전진시킨다.-->
+<!-- <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf"></script> -->
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf&libraries=services,drawing"></script>
+<script>
+
+
+    class myGeoLoc{
+        #latitude;
+        #longitude;
+        #islatitudeInit = false;
+        #islongitudeInit = false;
+        #isMutable = false;
+        constructor(latitude, longitude, isMutable = false){
+            this.#latitude = latitude;
+            this.#longitude = longitude;
+            this.#isMutable = isMutable;
+        }
+        //valid 위도 경도인지 체크하는 로직이 필요할지?
+        get latitude(){
+            return this.#latitude;
+        }
+        set latitude(latitude){
+            if(this.#isMutable || !this.#islatitudeInit){
+                this.#latitude = latitude
+                this.#islatitudeInit = true;
+            }
+        }
+        get longitude(){
+            return this.#longitude;
+        }
+        set longitude(longitude){
+            if(this.#isMutable || !this.#islongitudeInit){
+                this.#longitude = longitude
+                this.#islongitudeInit = true;
+            }
+        }
+        isNotEmpty(){
+            return this.#latitude && this.#longitude;
+        }
+        toKakoLatLng(){
+            return new kakao.maps.LatLng(this.#latitude, this.#longitude);
+        }
+        //mygeoloc to kakao.maps.LatLng
+    }
+    //global variables start
+    let fromGeoLoc;
+    let toGeoLoc;
+    let movingLoc;
+    var userCircle;
+    let polyline;
+    let linePath = [];
+    let nodeInfos = new Map();
+    let geocoder = new kakao.maps.services.Geocoder();
+
+    //global variables end
+
+    var watchTimer;
+
+    //geolcation
+    if('geolocation' in navigator){
+        navigator.geolocation.getCurrentPosition((position) => {
+            //console.log(position.coords.latitude, position.coords.longitude)
+            fromGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude);
+            movingLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
+            toGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
+            //console.log(geocoder.coord2Address(position.coords.longitude, position.coords.latitude))
+            fnInitMap();
+        },(error) => {
+            console.log(error)
+        },{
+            enableHighAccuracy : true,
+            timeout : Infinity,
+            maximumAge : Infinity
+        })
+        // const watchID = navigator.geolocation.watchPosition((position) => {
+        //     movingLoc.longitude = position.coords.longitude;
+        //     movingLoc.latitude = position.coords.latitude;
+        //     fnRedrawCircle();
+        // })
+        console.log("exist")
+    }else{
+        console.log("not")
+        //37.496028 127.0306009
+        fromGeoLoc = new myGeoLoc(37.496028, 127.0306009);
+        movingLoc = new myGeoLoc(37.496028, 127.0306009, true);
+        toGeoLoc = new myGeoLoc(37.496028, 127.0306009, true);
+        fnInitMap()
+    }
+    
+    var container = document.getElementById('map');
+    var options = {
+        center: new kakao.maps.LatLng(33.450701, 126.570667),
+        level: 3
+    };
+
+    var map = new kakao.maps.Map(container, options);
+
+    function fnInitMap(){
+
+        //지도 최대 최소 축소 배율 설정
+        map.setMaxLevel(10);
+        map.setMinLevel(1);
+    
+        //ROADMAP, SKYVIEW, HYBRID, ROADVIEW, OVERLAY, TRAFIC, TERRAIN, BICYCLE, USE_DISTRICT
+        //map.setMapTypeId()
+    
+        //pixel 만큼 부드럽게 중심 이동
+        //map.panBy(100, 100);
+    
+        var moveLatLng = new kakao.maps.LatLng(fromGeoLoc.latitude, fromGeoLoc.longitude);
+        map.panTo(moveLatLng, 0)
+    
+        const zoomControl = new kakao.maps.ZoomControl();
+        map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT)
+    
+        const mapTypeControl = new kakao.maps.MapTypeControl();
+        map.addControl(zoomControl, kakao.maps.ControlPosition.TOP)
+    
+        //map.relayout()
+    
+        //places        
+        // const places = new kakao.maps.services.Places();
+        // places.setMap(map);
+        // var searchCallBack = function(result, status){
+        //     if(status === kakao.maps.services.Status.OK){
+        //         console.log(result);
+        //     }else if(status === kakao.maps.services.Status.ZERO_RESULT){
+        //         console.log("no Search Result")
+        //     }
+        // }
+        // places.keywordSearch("판교", searchCallBack);
+    
+        // //search ends
+        
+        manager = new kakao.maps.drawing.DrawingManager({
+            map: map,
+            drawingMode: [
+                kakao.maps.drawing.OverlayType.MARKER
+            ],
+            markerOptions: {
+                draggable: true,
+                removable: true,
+                markerImages: [
+                    null, // API에서 제공하는 기본 마커 이미지
+                    {
+                        src: 'https://t1.daumcdn.net/localimg/localimages/07/2009/map/icon/ico_mn_13.png',
+                        width: 31,
+                        height: 35,
+                        shape: 'rect',
+                        coords: '0,0,31,35',
+                        hoverImage: {
+                            src: 'https://t1.daumcdn.net/localimg/localimages/07/2012/img/marker_normal.png',
+                            width: 33,
+                            height: 36,
+                            offsetX: 12,
+                            offsetY: 36,
+                            spriteWidth: 644,
+                            spriteHeight: 946,
+                            spriteOriginX: 10,
+                            spriteOriginY: 10
+                        },
+                        dragImage: {
+                            src: 'https://t1.daumcdn.net/localimg/localimages/07/2012/attach/pc_img/ico_comm.png',
+                            width : 20, // 마커 크기
+                            height : 20, // 마커 크기
+                            offsetX : 10, // 지도에 고정시킬 이미지 내 위치 좌표
+                            offsetY : 20, // 지도에 고정시킬 이미지 내 위치 좌표
+                            spriteWidth : 118, // 이미지 전체 크기
+                            spriteHeight : 111, // 이미지 전체 크기
+                            spriteOriginX : 0, // 이미지 중 마커로 사용할 위치
+                            spriteOriginY : 90 // 이미지 중 마커로 사용할 위치
+                        }
+                    }
+                ]
+            }
+        });
+        var toMarker;
+        
+        kakao.maps.event.addListener(map, "click", function(mouseEvent){
+            if(toMarker){
+                toMarker.setMap(null)
+            }
+            //.log(mouseEvent.latLng.getLng(), mouseEvent.latLng.getLat());
+            toGeoLoc.longitude = mouseEvent.latLng.getLng();
+            toGeoLoc.latitude = mouseEvent.latLng.getLat();
+            geocoder.coord2Address(mouseEvent.latLng.getLng(), mouseEvent.latLng.getLat(), function(result, status){
+                if(status === kakao.maps.services.Status.OK){
+                    console.log(result[0].address.address_name);
+                }else if(status === kakao.maps.services.Status.ZERO_RESULT){
+                    console.log("Zero")
+                }else{
+                    console.log("Else")
+                }
+            })
+            toMarker = new kakao.maps.Marker({
+                position : mouseEvent.latLng
+            })
+            toMarker.setMap(map)
+        })
+
+        
+        
+       
+        //지도위에 marker 표시
+        var fromMarker = new kakao.maps.Marker({
+            position : new kakao.maps.LatLng(fromGeoLoc.latitude, fromGeoLoc.longitude)
+        })
+        fromMarker.setMap(map);
+
+        // var toMarker = new kakao.maps.Marker({
+        // })
+
+        //add Event Listener
+        document.getElementById("findPath").addEventListener("click", function(event){
+            if(movingLoc.isNotEmpty() && fromGeoLoc.isNotEmpty()){
+                const apiKey = 'e9c5a05e82a299bcb079763ee5535cf3'
+                let myHeaders = new Headers();
+                myHeaders.append("Host", "apis-navi-kakaomoility.com");
+                myHeaders.append(`Authorization`, `KakaoAK ${apiKey}`);
+                const fromLongEncoded = encodeURIComponent(fromGeoLoc.longitude);
+                const formLatiEncoded = encodeURIComponent(fromGeoLoc.latitude);
+                const toLongEncoded = encodeURIComponent(toGeoLoc.longitude);
+                const toLatiEncoded = encodeURIComponent(toGeoLoc.latitude);
+
+                const myInit = {
+                    method : "GET",
+                    headers : myHeaders,
+                    mode : "cors"
+                
+                }
+                const param = {
+                    fromLocLong : fromLongEncoded, 
+                    fromLocLat : formLatiEncoded, 
+                    toLocLong : toLongEncoded, 
+                    toLocLat : toLatiEncoded
+                }
+                //line 좌표를 담을 객체 new kakao.maps.LatLng(lat , long)
+                linePath = [];
+                //${fromLongEncoded},${formLatiEncoded}&destination=${toLongEncoded},${toLatiEncoded}`
+                let myRequest = new Request(`https://apis-navi-kakaomoility.com/v1/directions?origin=${fromGeoLoc.longitude},${fromGeoLoc.latitude}&destination=${movingLoc.longitude},${movingLoc.latitude}&priority=RECOMMEND&car_type=1&car_fuel=GASOLINE`)
+                fetch(`/findPath`, {
+                    method : "POST",
+                    body : JSON.stringify(param),
+                    headers : {"Content-Type" :  "application/json"}
+                    
+                })
+                .then(function(response){
+                    //console.log(response);
+                    return response.text();
+                })
+                .then(function(data){
+                    //console.log(data);
+                    return JSON.parse(data);
+                })
+                .then(function(jsonObj){
+                    //console.log(jsonObj);
+                    let count = 0;
+                    for(const obj of jsonObj){
+                        //console.log(obj);
+                        const vertexes = obj.vertexes;
+                        const name = obj.name;
+                        const distance = obj.distance;
+                        let fromNode;
+                        let toNode;
+                        let lat = 0;
+                        let long = 0;
+                        for(const vidx in vertexes){
+                            //x좌표 -> long
+                            if(vidx == 1){
+                                fromNode = new myGeoLoc(vertexes[1], vertexes[0]);
+                            }else if(vidx == (vertexes.length - 1)){    
+                                toNode = new myGeoLoc(vertexes[vidx], vertexes[vidx - 1]);
+                            }
+                            if(vidx % 2 == 0){
+                                long = vertexes[vidx];
+                                continue;
+                            //y좌표 -> lat
+                            }else{
+                                lat = vertexes[vidx];
+                                linePath.push(new kakao.maps.LatLng(lat, long));
+                            }
+                        }
+                        nodeInfos.set("node-" + count, {
+                            'name' : name,
+                            'distance' : distance,
+                            'fromNode' : fromNode,
+                            'toNode' : toNode
+                        })
+                        count += 1;
+                    }
+                    //console.log(distTotal);
+                    return;
+                }).then(function(){
+                    //console.log(linePath);
+                    //console.log(nodeInfos)
+                    // 지도에 표시할 선을 생성합니다
+                    if(polyline){
+                        polyline.setMap(null);
+                    }
+                    polyline = new kakao.maps.Polyline({
+                        path: linePath, // 선을 구성하는 좌표배열 입니다
+                        strokeWeight: 5, // 선의 두께 입니다
+                        strokeColor: '#FFAE00', // 선의 색깔입니다
+                        strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                        strokeStyle: 'solid' // 선의 스타일입니다
+                    });
+                    //console.log(polyline)
+                    // 지도에 선을 표시합니다 
+                    polyline.setMap(map);
+                    //127.03242228126089 37.498814120051456
+                    const marker = new kakao.maps.Marker({
+                        position : new kakao.maps.LatLng(37.498814120051456, 127.03242228126089)
+                    })
+                    //getClosestNode(37.498814120051456, 127.03242228126089, linePath);
+                    fnInitMovingCircle(linePath, nodeInfos);
+                    for([key, value] of nodeInfos){
+                        let color = "#161616"
+                        let tempDot = new kakao.maps.Circle({
+                            center : value.fromNode.toKakoLatLng(),
+                            radius: 5, // 미터 단위의 원의 반지름입니다 
+                            strokeWeight: 5, // 선의 두께입니다 
+                            strokeColor: color, // 선의 색깔입니다
+                            strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                            strokeStyle: 'dashed', // 선의 스타일 입니다
+                            fillColor: color, // 채우기 색깔입니다
+                            fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                        })
+                        let tempDot2 = new kakao.maps.Circle({
+                            center : value.toNode.toKakoLatLng(),
+                            radius: 5, // 미터 단위의 원의 반지름입니다 
+                            strokeWeight: 5, // 선의 두께입니다 
+                            strokeColor: color, // 선의 색깔입니다
+                            strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                            strokeStyle: 'dashed', // 선의 스타일 입니다
+                            fillColor: color, // 채우기 색깔입니다
+                            fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                        })
+                        // const middleLat = (value.fromNode.latitude + value.toNode.latitude) / 2;
+                        // const middleLng = (value.fromNode.longitude + value.toNode.longitude) / 2;
+                        // const middleNode = new myGeoLoc(middleLat, middleLng);
+                        // let tempDot3 = new kakao.maps.Circle({
+                        //     center : middleNode.toKakoLatLng(),
+                        //     radius: 30, // 미터 단위의 원의 반지름입니다 
+                        //     strokeWeight: 3, // 선의 두께입니다 
+                        //     strokeColor: '#00FFBF', // 선의 색깔입니다
+                        //     strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                        //     strokeStyle: 'dashed', // 선의 스타일 입니다
+                        //     fillColor: '#00FFBF', // 채우기 색깔입니다
+                        //     fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                        // })
+                        tempDot.setMap(map);
+                        tempDot2.setMap(map);
+                        //tempDot3.setMap(map);
+                    }
+                    //getClosestNode(37.498814120051456, 127.03242228126089 ,nodeInfos)
+                    nodeInfos = new Map();
+                    linePath = []
+                }).catch(function(error){
+                    console.error(error);
+                })
+            }
+        })
+
+        //add Event Listener end
+    }
+    let watchID;
+    function fnInitMovingCircle(paths, nodes){
+        if(!watchID){
+            watchID = navigator.geolocation.watchPosition((position) => {
+                //inital value
+                //movingLoc.longitude = position.coords.longitude;
+                //movingLoc.latitude = position.coords.latitude;
+                const currLocLng = position.coords.longitude;
+                const currLocLat = position.coords.latitude;
+                
+                getClosestNode(currLocLat, currLocLng, nodes);
+                //fnRedrawCircle();
+            })
+        }
+    }
+
+    function fnRedrawCircle(){
+        if(userCircle){
+            userCircle.setMap(null);
+            userCircle = undefined;
+        }
+        // 지도에 표시할 원을 생성합니다
+        userCircle = new kakao.maps.Circle({
+            center : new kakao.maps.LatLng(movingLoc.latitude, movingLoc.longitude),  // 원의 중심좌표 입니다 
+            radius: 20, // 미터 단위의 원의 반지름입니다 
+            strokeWeight: 5, // 선의 두께입니다 
+            strokeColor: '#75B8FA', // 선의 색깔입니다
+            strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+            strokeStyle: 'dashed', // 선의 스타일 입니다
+            fillColor: '#CFE7FF', // 채우기 색깔입니다
+            fillOpacity: 0.7  // 채우기 불투명도 입니다   
+        }); 
+
+        // 지도에 원을 표시합니다 
+        userCircle.setMap(map); 
+        
+    }
+    let tempCircleReserve = [];
+    let closestNodeTimer;
+    let movingCircle;
+    function getClosestNode(currLat, currLong, lineNodes){
+        if(polyline){
+            if(!closestNodeTimer){
+                closestNodeTimer = setTimeout(function(){
+                    closestNodeTimer = null;
+                    let closestDist = Infinity;
+                    let closestNode = new myGeoLoc(0, 0, true);
+                    // let scndClosestDist = Infinity;
+                    // let scndClosestNode;
+                    let isFirstEncounter = true;
+                    let idx = 1;
+                    for([key, value] of lineNodes){
+                        //console.log(key + ":" + idx);
+                        idx += 1;
+                        const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, value.fromNode.latitude, value.fromNode.longitude);
+                        const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, value.toNode.latitude, value.toNode.longitude);
+                        const distTo2From = getDistanceFromDeg(value.fromNode.latitude, value.fromNode.longitude, value.toNode.latitude, value.toNode.longitude)
+
+                        const cosCurrLoc = getCosFrom3Length(distFrom2CurrLoc, distTo2CurrLoc, distTo2From);
+                        const cosFrom = getCosFrom3Length(distFrom2CurrLoc, distTo2From, distTo2CurrLoc);
+                        const cosTo = getCosFrom3Length(distTo2CurrLoc, distTo2From, distFrom2CurrLoc);
+
+                        //console.log("cos Curr: " + cosCurrLoc);
+                        //console.log("cost From :" + cosFrom);
+                        //console.log("cos To : " + cosTo);
+                        //만약 -인 각이 있다면 해당 각이 둔각임...
+                        //Obtuse == 둔각
+                        const currIsObtuse = 1 << 2;
+                        const fromIsObtuse = 1 << 3;
+                        const toIsObtuse = 1 << 4; 
+                        let isCurrObtuse = Math.sign(cosCurrLoc) == -1 ? currIsObtuse : 0;
+                        let isFromObtuse = Math.sign(cosFrom) == -1 ? fromIsObtuse : 0;
+                        let isToObtuse = Math.sign(cosTo) == -1 ? toIsObtuse : 0;
+                        let bitResult = isCurrObtuse | isFromObtuse | isToObtuse;
+                        
+                        let verticalLeng;
+                        let horizontalLeng;
+                        let resultGeoLoc;
+                        //console.log(value.name + "|||||||||||||");
+                        if(bitResult == currIsObtuse || bitResult == 0){
+                           // console.log("bitResult" , bitResult)
+                            let tempHalfLengthFrom = cosFrom * distFrom2CurrLoc;
+                            verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(tempHalfLengthFrom));
+                            //console.log(verticalLeng);
+                            //console.log(tempHalfLengthFrom);
+                            let horizontalLengFrom = tempHalfLengthFrom;
+                            resultGeoLoc = getIntrapolationPoint(distTo2From - tempHalfLengthFrom, tempHalfLengthFrom, value.toNode, value.fromNode);
+                        }else if(bitResult == fromIsObtuse){
+                            //console.log("bitResult ", bitResult);
+                            horizontalLeng = cosTo * distTo2CurrLoc;
+                            verticalLeng = Math.sqrt(getSquare(distTo2CurrLoc) - getSquare(verticalLeng));
+                                                                //close far
+                            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, value.fromNode, value.toNode);
+                        }else if(bitResult == toIsObtuse){
+                            //console.log("bitResult ", bitResult);
+                            horizontalLeng = cosFrom * distFrom2CurrLoc;
+                            verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(verticalLeng));
+                            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, value.toNode, value.fromNode);
+                        //둔각이 없다!
+                        }
+                        //console.log(resultGeoLoc);
+                        //삼각형 그리기
+                        // if(isFirstEncounter){
+                        //     isFirstEncounter = false;
+                        //     const polygonPath = [
+                        //         new kakao.maps.LatLng(currLat, currLong),
+                        //         new kakao.maps.LatLng(value.fromNode.latitude, value.fromNode.longitude),
+                        //         new kakao.maps.LatLng(value.toNode.latitude, value.toNode.longitude)
+                        //     ]
+                        //     const polygon = new kakao.maps.Polygon({
+                        //         path : polygonPath,
+                        //         strokeWeight : 3,
+                        //         strokeColor : '#39DE2A',
+                        //         strokeOpacity : 0.8,
+                        //         strokeStyle : 'longdash',
+                        //         fillColor : "#A2FF99",
+                        //         fillOpacity : 0.7
+                        //     })
+                        //     polygon.setMap(map);
+                        // }
+                        // const newDot = new kakao.maps.Circle({
+                        //     center : resultGeoLoc.toKakoLatLng(),
+                        //     radius : 8,
+                        //     strokeWeight: 3, // 선의 두께입니다 
+                        //     strokeColor: '#FE2E64', // 선의 색깔입니다
+                        //     strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                        //     strokeStyle: 'dashed', // 선의 스타일 입니다
+                        //     fillColor: '#FE2E64', // 채우기 색깔입니다
+                        //     fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                        // })
+                        // console.log(resultGeoLoc.latitude, resultGeoLoc.longitude)
+                        // newDot.setMap(map);
+                        const distToCurr = calDist2Nodes(new myGeoLoc(currLat, currLong), resultGeoLoc);
+                        if(distToCurr < closestDist ){
+                            closestDist = distToCurr;
+                            closestNode.latitude = resultGeoLoc.latitude;
+                            closestNode.longitude = resultGeoLoc.longitude;
+                        }
+                    }
+                    //for ends
+                    if(movingCircle){
+                        movingCircle.setMap(null)
+                    }
+                    movingCircle = new kakao.maps.Circle({
+                        center : closestNode.toKakoLatLng(),
+                        radius: 12, // 미터 단위의 원의 반지름입니다 
+                        strokeWeight: 3, // 선의 두께입니다 
+                        strokeColor: '#111111', // 선의 색깔입니다
+                        strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                        strokeStyle: 'dashed', // 선의 스타일 입니다
+                        fillColor: '#111111', // 채우기 색깔입니다
+                        fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                    })
+                    movingCircle.setMap(map);
+                })
+            }
+        }
+    }
+    function calDist2Nodes(fromGeoLoc, toGeoLoc){
+        const theRadius = 6371e3; // earth as meters
+        const dLat = deg2Rad(toGeoLoc.latitude - fromGeoLoc.latitude);
+        const dLong = deg2Rad(toGeoLoc.longitude - fromGeoLoc.longitude);
+        const long1Rad = deg2Rad(fromGeoLoc.longitude);
+        const long2Rad = deg2Rad(toGeoLoc.longitude);
+        //https://www.movable-type.co.uk/scripts/latlong.html
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(long1Rad) * Math.cos(long2Rad) * Math.sin(dLong / 2) * Math.sin(dLong / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const dist = c * theRadius;
+        return dist;
+
+    }
+    function deg2Rad(deg){
+        return deg * (Math.PI / 180)
+    }
+    function getDistanceFromDeg(lat1, long1, lat2, long2){
+        const theRadius = 6371e3; // earth as meters
+        const dLat = Math.abs(deg2Rad(lat2 - lat1));
+        const dLong = Math.abs(deg2Rad(long2 - long1));
+        const long1Rad = deg2Rad(long1);
+        const long2Rad = deg2Rad(long2);
+        //https://www.movable-type.co.uk/scripts/latlong.html
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(long1Rad) * Math.cos(long2Rad) * Math.sin(dLong / 2) * Math.sin(dLong / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const dist = c * theRadius;
+        return dist;
+    }
+    //https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
+    // function fasterGetDistanceFromDeg(lat1, long1, lat2, long2){
+    //     var p = 0.017453292519943295;    // Math.PI / 180
+    //     var cos = Math.cos;
+    //     var a = 0.5 - cos((lat2 - lat1) * p)/2 + 
+    //             cos(lat1 * p) * cos(lat2 * p) * 
+    //             (1 - cos((lon2 - lon1) * p))/2;
+
+    //     return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
+    // }
+    function getDist2Coords(x1, y1, x2, y2){
+        return Math.sqrt(getSquare(x1 - x2) + getSquare(y1 - y2))
+    }
+    function getSquare(num){
+        return num * num;
+    }
+    // x --- far ---- y --- close ---z
+    function getExtrapolationPoint(close, far, closeGeoLoc, farGeoLoc){   
+        let destLat;
+        let destLng;
+        //if far == close?
+        console.assert((far - close) != 0);
+        destLat = (far * closeGeoLoc.latitude - close * farGeoLoc.latitude) / (far - close);
+        destLng = (far * closeGeoLoc.longitude - close * farGeoLoc.longitude) / (far - close);
+        return new myGeoLoc(destLat, destLng);
+    }
+    //x ----far --- z -----close - y
+    function getIntrapolationPoint(close, far, closeGeoLoc, farGeoLoc){
+        let destLat;
+        let destLng;
+
+        destLat = (far * closeGeoLoc.latitude + close * farGeoLoc.latitude) / (far + close);
+        destLng = (far * closeGeoLoc.longitude + close * farGeoLoc.longitude) / (far + close);
+        return new myGeoLoc(destLat, destLng);
+    }
+    //0으로 나누면 에러 d1, d2는 cos를 구할 점에서 뻗어나가는 변, d3는 해당 점의 맞은편 변
+    //둔각 -> 음수
+    //예각 -> 양수
+    //직각 -> 0
+    function getCosFrom3Length(d1, d2 ,d3){
+        console.assert(d1 != 0);
+        console.assert(d2 != 0);
+        return (getSquare(d1) + getSquare(d2) - getSquare(d3)) / (2 * d1 * d2)
+    }
+</script>
+</html>
