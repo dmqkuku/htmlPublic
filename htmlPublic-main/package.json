@@ -2,21 +2,20 @@
   "name": "nodeserver1",
   "version": "1.0.0",
   "description": "",
-  "main": "index.html",
+  "main": "back/NaviServer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ./back/NaviServer.js",
-    "build": "pkg ./back/NaviServer.js"
+    "start": "node back/NaviServer.js",
+    "build": "pkg ."
   },
-  "bin": "./back/NaviServer.js",
+  "bin": {
+    "nodeserver1" : "back/NaviServer.js"
+  },
   "pkg": {
     "assets": [
       "front/*"
     ],
-    "scripts": "back/*.js",
-    "targets": [
-      "node16-linux-x64"
-    ]
+    "scripts": "back/*.js"
   },
   "author": "",
   "license": "ISC",
@@ -29,6 +28,7 @@
   },
   "type": "module",
   "devDependencies": {
-    "pkg": "^5.4.1"
-  }
+    "pkg": "^5.3.2"
+  },
+  "engines" : {"node" : "16.13.0"}
 }
