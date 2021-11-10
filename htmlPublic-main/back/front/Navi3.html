@@ -11,7 +11,7 @@
     <h1>Hello</h1>
     <button id="findPath">길찾기 시작</button>
     <hr/>
-    <div id="map" style="width:600px;height:600px;">
+    <div id="map" style="max-width:100%;max-height:100%;">
     </div>
 </body>
 <!-- 각 선분과 노드의 끝자락을 이용하여... 근처에 있는 동안 움직일 때마다 전진시킨다.-->
@@ -86,6 +86,9 @@
     //지도 최대 최소 축소 배율 설정
     map.setMaxLevel(10);
     map.setMinLevel(1);
+    map.setDraggable(true);
+    map.setZoomable(true);
+    map.setKeyboardShortcuts(true);
     //global variables end
 
     //참조 코드
