@@ -294,8 +294,9 @@
                 
                 const currLocLat = position.coords.latitude;
                 const currLocLng = position.coords.longitude;
-                
-                drawClosestNode(currLocLat, currLocLng, nodes);
+                console.log(position.coords.accuracy);
+                const accuracy = position.coords.accuracy;
+                drawClosestNode(currLocLat, currLocLng, nodes, accuracy);
             })
         }
     }
@@ -310,9 +311,9 @@
     let tempKey;
     let tempStartNode;
     let tempEndNode;
-    const bufferRange_outOfRange = 15;
+    const bufferRange_baseOutOfRange = 15;
     const bufferRange_endOfLine = 5;
-    function drawClosestNode(currLat, currLong, lineNodes){
+    function drawClosestNode(currLat, currLong, lineNodes, accuracy){
         if(polyline){
             if(!closestNodeTimer){
                 closestNodeTimer = setTimeout(function(){
@@ -378,11 +379,13 @@
                         // //middle...
                         const distMiddel2Curr = getDistanceFromDeg(currLat, currLong, (fromLat + toLat)/2, (fromLng + toLng)/2)
 
+                        const bufferRange_outOfRange = bufferRange_baseOutOfRange + accuracy;
+
                         const bit_from = distFrom2CurrLoc > bufferRange_outOfRange ? 1 << 2 : 0;
                         const bit_to = distTo2CurrLoc > bufferRange_outOfRange ? 1 << 3 : 0;
                         const bit_middle = distMiddel2Curr > bufferRange_outOfRange ? 1 << 4 : 0;
                         const bit_result = bit_from | bit_to | bit_middle;
-                        const valid_bit_field = [4, 8, 12, 16, 20, 24, 28];
+                        
                         if(bit_result == 28){
                             console.log(distFrom2CurrLoc > bufferRange_outOfRange ? "too Far from FromNode" : '');
                             console.log(distTo2CurrLoc > bufferRange_outOfRange ? "too far from toNode" : '');
