@@ -105,9 +105,11 @@
         navigator.geolocation.getCurrentPosition((position) => {
 
             //#노드 위치 셋팅#//
-            fromGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude);
+            //fromGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude);
+            fromGeoLoc = new myGeoLoc(37.496080007277065, 127.03077007712166);
             movingLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
-            toGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
+            //toGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
+            toGeoLoc = new myGeoLoc(37.49810102276344, 127.02875230780506);
             
             map.setCenter(fromGeoLoc.toKakoLatLng());
             fnInitMap();
