@@ -387,10 +387,7 @@
                         const bit_result = bit_from | bit_to | bit_middle;
                         
                         if(bit_result == 28){
-                            console.log(distFrom2CurrLoc > bufferRange_outOfRange ? "too Far from FromNode" : '');
-                            console.log(distTo2CurrLoc > bufferRange_outOfRange ? "too far from toNode" : '');
-                            console.log(distMiddel2Curr > bufferRange_outOfRange ? "too far from middleNode" : '');
-                            alert("You are out of range");
+                            alert("You are out of range! 길찾기가 종료됩니다!");
                             navigator.geolocation.clearWatch(watchID);
                         }else{
                             if(!movingCircle){
