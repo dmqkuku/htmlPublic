@@ -11,7 +11,6 @@
     </style>
 </head>
 <body>
-    <h1>Hello</h1>
     <button id="findPath" style="display:none;">길찾기 시작</button>
     <hr/>
     <div id="map" class="map" style="width:640px;height:480px;">
@@ -78,7 +77,6 @@
     let polyline;
     let linePath = [];
     let nodeInfos = new Map();
-    let geocoder = new kakao.maps.services.Geocoder();
     const container = document.getElementById('map');
     const options = {
         center: new kakao.maps.LatLng(33.450701, 126.570667),
@@ -101,15 +99,12 @@
     document.getElementById("map").style.height = (screenHeight - 100) + "px";
 
     map.relayout();
-
-    //참조 코드
-    //만약 임의로 "#map"을 지정해서 위치나 사이즈를 변경할 경우 map.relayout()을 호출해 주어야 합니다.
-
-    //geolcation
+    
     if('geolocation' in navigator){
         //.getCurrentLocation(success, error, options)
         navigator.geolocation.getCurrentPosition((position) => {
 
+            //#노드 위치 셋팅#//
             fromGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude);
             movingLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
             toGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
@@ -140,9 +135,6 @@
     
 
     function fnInitMap(){
-    
-        //pixel 만큼 부드럽게 중심 이동
-        //map.panBy(100, 100);
     
         const moveLatLng = new kakao.maps.LatLng(fromGeoLoc.latitude, fromGeoLoc.longitude);
         map.panTo(moveLatLng, 0)
@@ -204,7 +196,6 @@
                 linePath = [];
                 //node 정보 객체를 담을 맵 -> 다시 초기화
                 nodeInfos = new Map();
-                //${fromLongEncoded},${formLatiEncoded}&destination=${toLongEncoded},${toLatiEncoded}`
                 let myRequest = new Request(`https://apis-navi-kakaomoility.com/v1/directions?origin=${fromGeoLoc.longitude},${fromGeoLoc.latitude}&destination=${movingLoc.longitude},${movingLoc.latitude}&priority=RECOMMEND&car_type=1&car_fuel=GASOLINE`)
                 fetch(`/findPath`, {
                     method : "POST",
@@ -275,34 +266,6 @@
                     //127.03242228126089 37.498814120051456
                     
                     fnInitMovingCircle(linePath, nodeInfos);
-                    //아래 코드는 각 line의 시작 노드와 끝 노드를 맵에 표시하는 코드입니다....
-                    //디버깅시 도움이 되므로 남겨놓습니다.
-                    // for([key, value] of nodeInfos){
-                    //     let color = "#161616"
-                    //     let tempDot = new kakao.maps.Circle({
-                    //         center : value.fromNode.toKakoLatLng(),
-                    //         radius: 5, // 미터 단위의 원의 반지름입니다 
-                    //         strokeWeight: 5, // 선의 두께입니다 
-                    //         strokeColor: '#161616', // 선의 색깔입니다
-                    //         strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                    //         strokeStyle: 'dashed', // 선의 스타일 입니다
-                    //         fillColor: '#161616', // 채우기 색깔입니다
-                    //         fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                    //     })
-                    //     let tempDot2 = new kakao.maps.Circle({
-                    //         center : value.toNode.toKakoLatLng(),
-                    //         radius: 5, // 미터 단위의 원의 반지름입니다 
-                    //         strokeWeight: 5, // 선의 두께입니다 
-                    //         strokeColor: '#161616', // 선의 색깔입니다
-                    //         strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                    //         strokeStyle: 'dashed', // 선의 스타일 입니다
-                    //         fillColor: '#161616', // 채우기 색깔입니다
-                    //         fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                    //     })
-                        
-                    //     tempDot.setMap(map);
-                    //     tempDot2.setMap(map);
-                    // }
                     
                 }).catch(function(error){
                     console.error(error);

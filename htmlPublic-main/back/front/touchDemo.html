@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    latitude :<span id="lat"></span><br/>longitude : <span id="lng"></span>
+    <div id="map" class="map" style="width:640px;height:480px;">
+    </div>
+</body>
+<!-- 각 선분과 노드의 끝자락을 이용하여... 근처에 있는 동안 움직일 때마다 전진시킨다.-->
+<!-- <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf"></script> -->
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf&libraries=services,drawing"></script>
+<script>
+
+    class myGeoLoc{
+        #latitude;
+        #longitude;
+        #islatitudeInit = false;
+        #islongitudeInit = false;
+        #isMutable = false;
+        constructor(latitude, longitude, isMutable = false){
+            this.#latitude = latitude;
+            this.#longitude = longitude;
+            this.#isMutable = isMutable;
+        }
+        //valid 위도 경도인지 체크하는 로직이 필요할지?
+        get latitude(){
+            return this.#latitude;
+        }
+        set latitude(latitude){
+            if(this.#isMutable || !this.#islatitudeInit){
+                this.#latitude = latitude;
+                this.#islatitudeInit = true;
+            }
+        }
+        get longitude(){
+            return this.#longitude;
+        }
+        set longitude(longitude){
+            if(this.#isMutable || !this.#islongitudeInit){
+                this.#longitude = longitude
+                this.#islongitudeInit = true;
+            }
+        }
+        isNotEmpty(){
+            return this.#latitude && this.#longitude;
+        }
+        toKakoLatLng(){
+            return new kakao.maps.LatLng(this.#latitude, this.#longitude);
+        }
+        log(){
+            console.log(`latitude : ${this.#latitude}, longitude : ${this.#longitude}`);
+        }
+        //mygeoloc to kakao.maps.LatLng
+    }
+
+    const container = document.getElementById('map');
+    const options = {
+        center: new kakao.maps.LatLng(33.450701, 126.570667),
+        level: 3
+    };
+    const map = new kakao.maps.Map(container, options);
+    //지도 최대 최소 축소 배율 설정
+    map.setMaxLevel(10);
+    map.setMinLevel(1);
+    map.setDraggable(true);
+    map.setZoomable(true);
+    map.setKeyboardShortcuts(true);
+    //global variables end
+
+    const screenWidth = screen.availWidth;
+    const screenHeight = screen.availHeight;
+
+    document.getElementById("map").style.width = screenWidth + "px";
+    document.getElementById("map").style.height = (screenHeight - 100) + "px";
+    
+    map.relayout();
+
+    let toGeoLoc;
+    let toMarker;
+    if('geolocation' in navigator){
+        //.getCurrentLocation(success, error, options)
+        navigator.geolocation.getCurrentPosition((position) => {
+
+            toGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
+            
+            map.setCenter(toGeoLoc.toKakoLatLng());
+
+            //현재 위치 출력
+            toGeoLoc.log();
+
+        },(error) => {
+            console.log(error)
+        },{
+            enableHighAccuracy : true,
+            timeout : Infinity,
+            maximumAge : Infinity
+        })
+        
+        console.log("geolocation is exist")
+    }
+    kakao.maps.event.addListener(map, "click", function(mouseEvent){
+            
+        toGeoLoc.longitude = mouseEvent.latLng.getLng();
+        toGeoLoc.latitude = mouseEvent.latLng.getLat();
+
+        document.getElementById("lat").textContent = toGeoLoc.latitude
+        document.getElementById("lng").textContent = toGeoLoc.longitude
+        toGeoLoc.log();
+        if(!toMarker){
+            toMarker = new kakao.maps.Marker({
+                position : mouseEvent.latLng
+            })
+            toMarker.setMap(map)
+        }else{
+            toMarker.setPosition(mouseEvent.latLng);
+        }
+    })
+
+    //지도위에 marker 표
+</script>
+</body>
+</html>
