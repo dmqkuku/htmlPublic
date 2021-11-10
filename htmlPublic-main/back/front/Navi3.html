@@ -144,22 +144,27 @@
         const zoomControl = new kakao.maps.ZoomControl();
         map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT)
 
-        let toMarker;  
-        kakao.maps.event.addListener(map, "click", function(mouseEvent){
-            
-            toGeoLoc.longitude = mouseEvent.latLng.getLng();
-            toGeoLoc.latitude = mouseEvent.latLng.getLat();
+        let toMarker; 
 
-            toGeoLoc.log();
-            if(!toMarker){
-                toMarker = new kakao.maps.Marker({
-                    position : mouseEvent.latLng
-                })
-                toMarker.setMap(map)
-            }else{
-                toMarker.setPosition(mouseEvent.latLng);
-            }
+        // kakao.maps.event.addListener(map, "click", function(mouseEvent){
+            
+        //     toGeoLoc.longitude = mouseEvent.latLng.getLng();
+        //     toGeoLoc.latitude = mouseEvent.latLng.getLat();
+
+        //     toGeoLoc.log();
+        //     if(!toMarker){
+        //         toMarker = new kakao.maps.Marker({
+        //             position : mouseEvent.latLng
+        //         })
+        //         toMarker.setMap(map)
+        //     }else{
+        //         toMarker.setPosition(mouseEvent.latLng);
+        //     }
+        // })
+        toMarker = new kakao.maps.Marker({
+            position : toGeoLoc.toKakoLatLng()
         })
+        toMarker.setMap(map);
 
         //지도위에 marker 표시
         const fromMarker = new kakao.maps.Marker({
