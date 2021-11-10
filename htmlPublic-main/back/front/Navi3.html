@@ -97,8 +97,8 @@
     const screenWidth = screen.availWidth;
     const screenHeight = screen.availHeight;
 
-    document.getElementById("map").style.height = (screenHeight - 45) + "px";
     document.getElementById("map").style.width = screenWidth + "px";
+    document.getElementById("map").style.height = (screenHeight - 100) + "px";
 
     map.relayout();
 
@@ -155,7 +155,7 @@
             
             toGeoLoc.longitude = mouseEvent.latLng.getLng();
             toGeoLoc.latitude = mouseEvent.latLng.getLat();
-            
+
             toGeoLoc.log();
             if(!toMarker){
                 toMarker = new kakao.maps.Marker({
