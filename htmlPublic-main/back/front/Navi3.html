@@ -172,7 +172,9 @@
         })
         fromMarker.setMap(map);
 
-        document.getElementById("findPath").click();
+        document.addEventListener("DOMContentLoaded",  function(){
+            document.getElementById("findPath").click();
+        })
 
         //add Event Listener
         document.getElementById("findPath").addEventListener("click", function(event){
