@@ -172,10 +172,6 @@
         })
         fromMarker.setMap(map);
 
-        document.addEventListener("DOMContentLoaded",  function(){
-            document.getElementById("findPath").click();
-        })
-
         //add Event Listener
         document.getElementById("findPath").addEventListener("click", function(event){
             if(movingLoc.isNotEmpty() && fromGeoLoc.isNotEmpty()){
@@ -565,6 +561,9 @@
         console.assert(d2 != 0);
         return (getSquare(d1) + getSquare(d2) - getSquare(d3)) / (2 * d1 * d2)
     }
-    
+
+    document.addEventListener("DOMContentLoaded",  function(){
+            document.getElementById("findPath").click();
+    })
 </script>
 </html>
