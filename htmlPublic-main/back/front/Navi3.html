@@ -18,8 +18,6 @@
 <!-- <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf"></script> -->
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf&libraries=services,drawing"></script>
 <script>
-
-
     class myGeoLoc{
         #latitude;
         #longitude;
@@ -56,6 +54,9 @@
         toKakoLatLng(){
             return new kakao.maps.LatLng(this.#latitude, this.#longitude);
         }
+        log(){
+            console.log(`latitude : ${this.#latitude}, longitude : ${this.#longitude}`);
+        }
         //mygeoloc to kakao.maps.LatLng
     }
     //global variables start
@@ -67,20 +68,36 @@
     let linePath = [];
     let nodeInfos = new Map();
     let geocoder = new kakao.maps.services.Geocoder();
+    const container = document.getElementById('map');
+    const options = {
+        center: new kakao.maps.LatLng(33.450701, 126.570667),
+        level: 3
+    };
 
+    const map = new kakao.maps.Map(container, options);
+    //지도 최대 최소 축소 배율 설정
+    map.setMaxLevel(10);
+    map.setMinLevel(1);
     //global variables end
 
-    var watchTimer;
+    //참조 코드
+    //만약 임의로 "#map"을 지정해서 위치나 사이즈를 변경할 경우 map.relayout()을 호출해 주어야 합니다.
 
     //geolcation
     if('geolocation' in navigator){
+        //.getCurrentLocation(success, error, options)
         navigator.geolocation.getCurrentPosition((position) => {
-            //console.log(position.coords.latitude, position.coords.longitude)
+
             fromGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude);
             movingLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
             toGeoLoc = new myGeoLoc(position.coords.latitude, position.coords.longitude, true);
-            //console.log(geocoder.coord2Address(position.coords.longitude, position.coords.latitude))
+            
+            map.setCenter(fromGeoLoc.toKakoLatLng());
             fnInitMap();
+
+            //현재 위치 출력
+            fromGeoLoc.log();
+
         },(error) => {
             console.log(error)
         },{
@@ -88,151 +105,59 @@
             timeout : Infinity,
             maximumAge : Infinity
         })
-        // const watchID = navigator.geolocation.watchPosition((position) => {
-        //     movingLoc.longitude = position.coords.longitude;
-        //     movingLoc.latitude = position.coords.latitude;
-        //     fnRedrawCircle();
-        // })
-        console.log("exist")
+        
+        console.log("geolocation is exist")
     }else{
         console.log("not")
         //37.496028 127.0306009
         fromGeoLoc = new myGeoLoc(37.496028, 127.0306009);
         movingLoc = new myGeoLoc(37.496028, 127.0306009, true);
         toGeoLoc = new myGeoLoc(37.496028, 127.0306009, true);
-        fnInitMap()
+        //fnInitMap()
     }
     
-    var container = document.getElementById('map');
-    var options = {
-        center: new kakao.maps.LatLng(33.450701, 126.570667),
-        level: 3
-    };
-
-    var map = new kakao.maps.Map(container, options);
 
     function fnInitMap(){
-
-        //지도 최대 최소 축소 배율 설정
-        map.setMaxLevel(10);
-        map.setMinLevel(1);
-    
-        //ROADMAP, SKYVIEW, HYBRID, ROADVIEW, OVERLAY, TRAFIC, TERRAIN, BICYCLE, USE_DISTRICT
-        //map.setMapTypeId()
     
         //pixel 만큼 부드럽게 중심 이동
         //map.panBy(100, 100);
     
-        var moveLatLng = new kakao.maps.LatLng(fromGeoLoc.latitude, fromGeoLoc.longitude);
+        const moveLatLng = new kakao.maps.LatLng(fromGeoLoc.latitude, fromGeoLoc.longitude);
         map.panTo(moveLatLng, 0)
     
         const zoomControl = new kakao.maps.ZoomControl();
         map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT)
-    
-        const mapTypeControl = new kakao.maps.MapTypeControl();
-        map.addControl(zoomControl, kakao.maps.ControlPosition.TOP)
-    
-        //map.relayout()
-    
-        //places        
-        // const places = new kakao.maps.services.Places();
-        // places.setMap(map);
-        // var searchCallBack = function(result, status){
-        //     if(status === kakao.maps.services.Status.OK){
-        //         console.log(result);
-        //     }else if(status === kakao.maps.services.Status.ZERO_RESULT){
-        //         console.log("no Search Result")
-        //     }
-        // }
-        // places.keywordSearch("판교", searchCallBack);
-    
-        // //search ends
-        
-        manager = new kakao.maps.drawing.DrawingManager({
-            map: map,
-            drawingMode: [
-                kakao.maps.drawing.OverlayType.MARKER
-            ],
-            markerOptions: {
-                draggable: true,
-                removable: true,
-                markerImages: [
-                    null, // API에서 제공하는 기본 마커 이미지
-                    {
-                        src: 'https://t1.daumcdn.net/localimg/localimages/07/2009/map/icon/ico_mn_13.png',
-                        width: 31,
-                        height: 35,
-                        shape: 'rect',
-                        coords: '0,0,31,35',
-                        hoverImage: {
-                            src: 'https://t1.daumcdn.net/localimg/localimages/07/2012/img/marker_normal.png',
-                            width: 33,
-                            height: 36,
-                            offsetX: 12,
-                            offsetY: 36,
-                            spriteWidth: 644,
-                            spriteHeight: 946,
-                            spriteOriginX: 10,
-                            spriteOriginY: 10
-                        },
-                        dragImage: {
-                            src: 'https://t1.daumcdn.net/localimg/localimages/07/2012/attach/pc_img/ico_comm.png',
-                            width : 20, // 마커 크기
-                            height : 20, // 마커 크기
-                            offsetX : 10, // 지도에 고정시킬 이미지 내 위치 좌표
-                            offsetY : 20, // 지도에 고정시킬 이미지 내 위치 좌표
-                            spriteWidth : 118, // 이미지 전체 크기
-                            spriteHeight : 111, // 이미지 전체 크기
-                            spriteOriginX : 0, // 이미지 중 마커로 사용할 위치
-                            spriteOriginY : 90 // 이미지 중 마커로 사용할 위치
-                        }
-                    }
-                ]
-            }
-        });
-        var toMarker;
-        
+
+        let toMarker;  
         kakao.maps.event.addListener(map, "click", function(mouseEvent){
-            if(toMarker){
-                toMarker.setMap(null)
-            }
-            //.log(mouseEvent.latLng.getLng(), mouseEvent.latLng.getLat());
+            
             toGeoLoc.longitude = mouseEvent.latLng.getLng();
             toGeoLoc.latitude = mouseEvent.latLng.getLat();
-            geocoder.coord2Address(mouseEvent.latLng.getLng(), mouseEvent.latLng.getLat(), function(result, status){
-                if(status === kakao.maps.services.Status.OK){
-                    console.log(result[0].address.address_name);
-                }else if(status === kakao.maps.services.Status.ZERO_RESULT){
-                    console.log("Zero")
-                }else{
-                    console.log("Else")
-                }
-            })
-            toMarker = new kakao.maps.Marker({
-                position : mouseEvent.latLng
-            })
-            toMarker.setMap(map)
+            if(!toMarker){
+                toMarker = new kakao.maps.Marker({
+                    position : mouseEvent.latLng
+                })
+                toMarker.setMap(map)
+            }else{
+                toMarker.setPosition(mouseEvent.latLng);
+            }
         })
 
-        
-        
-       
         //지도위에 marker 표시
-        var fromMarker = new kakao.maps.Marker({
+        const fromMarker = new kakao.maps.Marker({
             position : new kakao.maps.LatLng(fromGeoLoc.latitude, fromGeoLoc.longitude)
         })
         fromMarker.setMap(map);
 
-        // var toMarker = new kakao.maps.Marker({
-        // })
-
         //add Event Listener
         document.getElementById("findPath").addEventListener("click", function(event){
             if(movingLoc.isNotEmpty() && fromGeoLoc.isNotEmpty()){
+                //#apiKey #카카오api #키
                 const apiKey = 'e9c5a05e82a299bcb079763ee5535cf3'
                 let myHeaders = new Headers();
                 myHeaders.append("Host", "apis-navi-kakaomoility.com");
                 myHeaders.append(`Authorization`, `KakaoAK ${apiKey}`);
+
                 const fromLongEncoded = encodeURIComponent(fromGeoLoc.longitude);
                 const formLatiEncoded = encodeURIComponent(fromGeoLoc.latitude);
                 const toLongEncoded = encodeURIComponent(toGeoLoc.longitude);
@@ -242,16 +167,19 @@
                     method : "GET",
                     headers : myHeaders,
                     mode : "cors"
-                
                 }
+
                 const param = {
                     fromLocLong : fromLongEncoded, 
                     fromLocLat : formLatiEncoded, 
                     toLocLong : toLongEncoded, 
                     toLocLat : toLatiEncoded
                 }
-                //line 좌표를 담을 객체 new kakao.maps.LatLng(lat , long)
+
+                //line 좌표를 담을 객체 new kakao.maps.LatLng(lat , long) -> 다시 초기화
                 linePath = [];
+                //node 정보 객체를 담을 맵 -> 다시 초기화
+                nodeInfos = new Map();
                 //${fromLongEncoded},${formLatiEncoded}&destination=${toLongEncoded},${toLatiEncoded}`
                 let myRequest = new Request(`https://apis-navi-kakaomoility.com/v1/directions?origin=${fromGeoLoc.longitude},${fromGeoLoc.latitude}&destination=${movingLoc.longitude},${movingLoc.latitude}&priority=RECOMMEND&car_type=1&car_fuel=GASOLINE`)
                 fetch(`/findPath`, {
@@ -261,18 +189,15 @@
                     
                 })
                 .then(function(response){
-                    //console.log(response);
                     return response.text();
                 })
                 .then(function(data){
-                    //console.log(data);
                     return JSON.parse(data);
                 })
                 .then(function(jsonObj){
-                    //console.log(jsonObj);
                     let count = 0;
                     for(const obj of jsonObj){
-                        //console.log(obj);
+
                         const vertexes = obj.vertexes;
                         const name = obj.name;
                         const distance = obj.distance;
@@ -280,13 +205,17 @@
                         let toNode;
                         let lat = 0;
                         let long = 0;
+
                         for(const vidx in vertexes){
-                            //x좌표 -> long
+                            //vidx가 1일때 == 첫 노드
                             if(vidx == 1){
                                 fromNode = new myGeoLoc(vertexes[1], vertexes[0]);
+                            //vidx가 array의 길이 - 1 일때 == 마지막 노드
                             }else if(vidx == (vertexes.length - 1)){    
                                 toNode = new myGeoLoc(vertexes[vidx], vertexes[vidx - 1]);
                             }
+                            //vertexes의 구조는 [longitude, latitude, longitude, latitude, longitude...]의 구조로 되어있습니다.
+                            //x좌표 -> long
                             if(vidx % 2 == 0){
                                 long = vertexes[vidx];
                                 continue;
@@ -304,11 +233,8 @@
                         })
                         count += 1;
                     }
-                    //console.log(distTotal);
                     return;
                 }).then(function(){
-                    //console.log(linePath);
-                    //console.log(nodeInfos)
                     // 지도에 표시할 선을 생성합니다
                     if(polyline){
                         polyline.setMap(null);
@@ -320,57 +246,39 @@
                         strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
                         strokeStyle: 'solid' // 선의 스타일입니다
                     });
-                    //console.log(polyline)
                     // 지도에 선을 표시합니다 
                     polyline.setMap(map);
                     //127.03242228126089 37.498814120051456
-                    const marker = new kakao.maps.Marker({
-                        position : new kakao.maps.LatLng(37.498814120051456, 127.03242228126089)
-                    })
-                    //getClosestNode(37.498814120051456, 127.03242228126089, linePath);
+                    
                     fnInitMovingCircle(linePath, nodeInfos);
-                    for([key, value] of nodeInfos){
-                        let color = "#161616"
-                        let tempDot = new kakao.maps.Circle({
-                            center : value.fromNode.toKakoLatLng(),
-                            radius: 5, // 미터 단위의 원의 반지름입니다 
-                            strokeWeight: 5, // 선의 두께입니다 
-                            strokeColor: color, // 선의 색깔입니다
-                            strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                            strokeStyle: 'dashed', // 선의 스타일 입니다
-                            fillColor: color, // 채우기 색깔입니다
-                            fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                        })
-                        let tempDot2 = new kakao.maps.Circle({
-                            center : value.toNode.toKakoLatLng(),
-                            radius: 5, // 미터 단위의 원의 반지름입니다 
-                            strokeWeight: 5, // 선의 두께입니다 
-                            strokeColor: color, // 선의 색깔입니다
-                            strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                            strokeStyle: 'dashed', // 선의 스타일 입니다
-                            fillColor: color, // 채우기 색깔입니다
-                            fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                        })
-                        // const middleLat = (value.fromNode.latitude + value.toNode.latitude) / 2;
-                        // const middleLng = (value.fromNode.longitude + value.toNode.longitude) / 2;
-                        // const middleNode = new myGeoLoc(middleLat, middleLng);
-                        // let tempDot3 = new kakao.maps.Circle({
-                        //     center : middleNode.toKakoLatLng(),
-                        //     radius: 30, // 미터 단위의 원의 반지름입니다 
-                        //     strokeWeight: 3, // 선의 두께입니다 
-                        //     strokeColor: '#00FFBF', // 선의 색깔입니다
-                        //     strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                        //     strokeStyle: 'dashed', // 선의 스타일 입니다
-                        //     fillColor: '#00FFBF', // 채우기 색깔입니다
-                        //     fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                        // })
-                        tempDot.setMap(map);
-                        tempDot2.setMap(map);
-                        //tempDot3.setMap(map);
-                    }
-                    //getClosestNode(37.498814120051456, 127.03242228126089 ,nodeInfos)
-                    nodeInfos = new Map();
-                    linePath = []
+                    //아래 코드는 line의 시작 노드와 끝 노드를 맵에 표시하는 코드입니다....
+                    // for([key, value] of nodeInfos){
+                    //     let color = "#161616"
+                    //     let tempDot = new kakao.maps.Circle({
+                    //         center : value.fromNode.toKakoLatLng(),
+                    //         radius: 5, // 미터 단위의 원의 반지름입니다 
+                    //         strokeWeight: 5, // 선의 두께입니다 
+                    //         strokeColor: '#161616', // 선의 색깔입니다
+                    //         strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                    //         strokeStyle: 'dashed', // 선의 스타일 입니다
+                    //         fillColor: '#161616', // 채우기 색깔입니다
+                    //         fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                    //     })
+                    //     let tempDot2 = new kakao.maps.Circle({
+                    //         center : value.toNode.toKakoLatLng(),
+                    //         radius: 5, // 미터 단위의 원의 반지름입니다 
+                    //         strokeWeight: 5, // 선의 두께입니다 
+                    //         strokeColor: '#161616', // 선의 색깔입니다
+                    //         strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                    //         strokeStyle: 'dashed', // 선의 스타일 입니다
+                    //         fillColor: '#161616', // 채우기 색깔입니다
+                    //         fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                    //     })
+                        
+                    //     tempDot.setMap(map);
+                    //     tempDot2.setMap(map);
+                    // }
+                    
                 }).catch(function(error){
                     console.error(error);
                 })
@@ -383,38 +291,13 @@
     function fnInitMovingCircle(paths, nodes){
         if(!watchID){
             watchID = navigator.geolocation.watchPosition((position) => {
-                //inital value
-                //movingLoc.longitude = position.coords.longitude;
-                //movingLoc.latitude = position.coords.latitude;
-                const currLocLng = position.coords.longitude;
-                const currLocLat = position.coords.latitude;
                 
-                getClosestNode(currLocLat, currLocLng, nodes);
-                //fnRedrawCircle();
+                const currLocLat = position.coords.latitude;
+                const currLocLng = position.coords.longitude;
+                
+                drawClosestNode(currLocLat, currLocLng, nodes);
             })
         }
-    }
-
-    function fnRedrawCircle(){
-        if(userCircle){
-            userCircle.setMap(null);
-            userCircle = undefined;
-        }
-        // 지도에 표시할 원을 생성합니다
-        userCircle = new kakao.maps.Circle({
-            center : new kakao.maps.LatLng(movingLoc.latitude, movingLoc.longitude),  // 원의 중심좌표 입니다 
-            radius: 20, // 미터 단위의 원의 반지름입니다 
-            strokeWeight: 5, // 선의 두께입니다 
-            strokeColor: '#75B8FA', // 선의 색깔입니다
-            strokeOpacity: 1, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-            strokeStyle: 'dashed', // 선의 스타일 입니다
-            fillColor: '#CFE7FF', // 채우기 색깔입니다
-            fillOpacity: 0.7  // 채우기 불투명도 입니다   
-        }); 
-
-        // 지도에 원을 표시합니다 
-        userCircle.setMap(map); 
-        
     }
     let closestNodeTimer;
     let movingCircle;
@@ -427,210 +310,22 @@
     let tempKey;
     let tempStartNode;
     let tempEndNode;
-    const bufferRange = 30;
-    function getClosestNode(currLat, currLong, lineNodes){
+    const bufferRange_outOfRange = 15;
+    const bufferRange_endOfLine = 5;
+    function drawClosestNode(currLat, currLong, lineNodes){
         if(polyline){
             if(!closestNodeTimer){
                 closestNodeTimer = setTimeout(function(){
                     closestNodeTimer = null;
                     let closestDist = Infinity;
                     let closestNode = new myGeoLoc(0, 0, true);
-                    // let scndClosestDist = Infinity;
-                    // let scndClosestNode;
 
                     let idx = 1;
-                    //init 이 끝난 후...
-                    if(!isInit){
-                        //currLine.startNode
-                        //currLine.endNode
-                        const fromLat = currLine.startNode.latitude;
-                        const fromLng = currLine.startNode.longitude;
-                        const toLat = currLine.endNode.latitude;
-                        const toLng = currLine.endNode.longitude;
-                        const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, fromLat, fromLng);
-                        const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, toLat, toLng);
-                        const distTo2From = getDistanceFromDeg(fromLat, fromLng, toLat, toLng)
-
-                        //middle...
-                        const distMiddel2Curr = getDistanceFromDeg(currLat, currLong, (fromLat + toLat)/2, (fromLng + toLng)/2)
-
-                        const cosCurrLoc = getCosFrom3Length(distFrom2CurrLoc, distTo2CurrLoc, distTo2From);
-                        const cosFrom = getCosFrom3Length(distFrom2CurrLoc, distTo2From, distTo2CurrLoc);
-                        const cosTo = getCosFrom3Length(distTo2CurrLoc, distTo2From, distFrom2CurrLoc);
-
-                        const currIsObtuse = 1 << 2;
-                        const fromIsObtuse = 1 << 3;
-                        const toIsObtuse = 1 << 4; 
-                        let isCurrObtuse = Math.sign(cosCurrLoc) == -1 ? currIsObtuse : 0;
-                        let isFromObtuse = Math.sign(cosFrom) == -1 ? fromIsObtuse : 0;
-                        let isToObtuse = Math.sign(cosTo) == -1 ? toIsObtuse : 0;
-                        let bitResult = isCurrObtuse | isFromObtuse | isToObtuse;
-                        
-                        let verticalLeng;
-                        let horizontalLeng;
-                        let resultGeoLoc;
-                        //console.log(value.name + "|||||||||||||");
-                        if(bitResult == currIsObtuse || bitResult == 0){
-                           // console.log("bitResult" , bitResult)
-                            let tempHalfLengthFrom = cosFrom * distFrom2CurrLoc;
-                            verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(tempHalfLengthFrom));
-                            //console.log(verticalLeng);
-                            //console.log(tempHalfLengthFrom);
-                            let horizontalLengFrom = tempHalfLengthFrom;
-                            resultGeoLoc = getIntrapolationPoint(distTo2From - tempHalfLengthFrom, tempHalfLengthFrom, currLine.endNode, currLine.startNode);
-                        }else if(bitResult == fromIsObtuse){
-                            //console.log("bitResult ", bitResult);
-                            horizontalLeng = cosTo * distTo2CurrLoc;
-                            verticalLeng = Math.sqrt(getSquare(distTo2CurrLoc) - getSquare(verticalLeng));
-                                                                //close far
-                            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, currLine.startNode, currLine.endNode);
-                        }else if(bitResult == toIsObtuse){
-                            //console.log("bitResult ", bitResult);
-                            horizontalLeng = cosFrom * distFrom2CurrLoc;
-                            verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(verticalLeng));
-                            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, currLine.endNode, currLine.startNode);
-                        //둔각이 없다!
-                        }
-
-                        const bit_from = distFrom2CurrLoc > bufferRange ? 1 << 2 : 0;
-                        const bit_to = distTo2CurrLoc > bufferRange ? 1 << 3 : 0;
-                        const bit_middle = distMiddel2Curr > bufferRange ? 1 << 4 : 0;
-                        const bit_result = bit_from | bit_to | bit_middle;
-                        const valid_bit_field = [4, 8, 12, 16, 20, 24, 28];
-                        if(bit_result == 28){
-                            console.log(distFrom2CurrLoc > bufferRange ? "too Far from FromNode" + distFrom2CurrLoc : '');
-                            console.log(distTo2CurrLoc > bufferRange ? "too far from toNode" + distTo2CurrLoc : '');
-                            console.log(distMiddel2Curr > bufferRange ? "too far from middleNode" + distMiddel2Curr : '');
-                            alert("You are out of range");
-                            naviagtor.geolocation.clearWatch(watchID);
-                        }else{
-                            if(movingCircle){
-                                movingCircle.setMap(null);
-                            }
-                            movingCircle = new kakao.maps.Circle({
-                                center : resultGeoLoc.toKakoLatLng(),
-                                radius: 12, // 미터 단위의 원의 반지름입니다 
-                                strokeWeight: 3, // 선의 두께입니다 
-                                strokeColor: '#111111', // 선의 색깔입니다
-                                strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                                strokeStyle: 'dashed', // 선의 스타일 입니다
-                                fillColor: '#111111', // 채우기 색깔입니다
-                                fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                            })
-                            movingCircle.setMap(map);
-                        }
-
-                        //check 
-                        let distResult2End = getDistanceFromDeg(resultGeoLoc.latitude, resultGeoLoc.longitude, currLine.endNode.latitude, currLine.endNode.longitude);
-                        if(distResult2End <= bufferRange){
-                            isEndOfLine = true;
-                        }
-                    }
-                    if(isEndOfLine){
-                        const nodeIdx = Number(currLine.nodeName.split("-")[1]) + 1;
-                        if(lineNodes.has("node-" + nodeIdx)){
-                            const nextValue = lineNodes.get("node-" + nodeIdx);
-                            currLine.startNode = nextValue.fromNode;
-                            currLine.endNode = nextValue.toNode;
-                            currLine.nodeName = "node-" + nodeIdx;
-                            ;
-                        }else{
-                            alert("길찾기 종료!")
-                            naviagtor.geolocation.clearWatch(watchID);
-                        }
-                        isEndOfLine = false;
-                    }
                     //init시 하위 소스 사용
                     if(isInit){
                         for([key, value] of lineNodes){
-                            //console.log(key + ":" + idx);
-                            //idx += 1;
-                            const fromLat = value.fromNode.latitude;
-                            const fromLng = value.fromNode.longitude;
-                            const toLat = value.toNode.latitude;
-                            const toLng = value.toNode.longitude;
-                            const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, fromLat, fromLng);
-                            const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, toLat, toLng);
-                            const distTo2From = getDistanceFromDeg(fromLat, fromLng, toLat, toLng)
-    
-                            // const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, value.fromNode.latitude, value.fromNode.longitude);
-                            // const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, value.toNode.latitude, value.toNode.longitude);
-                            // const distTo2From = getDistanceFromDeg(value.fromNode.latitude, value.fromNode.longitude, value.toNode.latitude, value.toNode.longitude)
-    
-                            const cosCurrLoc = getCosFrom3Length(distFrom2CurrLoc, distTo2CurrLoc, distTo2From);
-                            const cosFrom = getCosFrom3Length(distFrom2CurrLoc, distTo2From, distTo2CurrLoc);
-                            const cosTo = getCosFrom3Length(distTo2CurrLoc, distTo2From, distFrom2CurrLoc);
-    
-                            //console.log("cos Curr: " + cosCurrLoc);
-                            //console.log("cost From :" + cosFrom);
-                            //console.log("cos To : " + cosTo);
-                            //만약 -인 각이 있다면 해당 각이 둔각임...
-                            //Obtuse == 둔각
-                            const currIsObtuse = 1 << 2;
-                            const fromIsObtuse = 1 << 3;
-                            const toIsObtuse = 1 << 4; 
-                            let isCurrObtuse = Math.sign(cosCurrLoc) == -1 ? currIsObtuse : 0;
-                            let isFromObtuse = Math.sign(cosFrom) == -1 ? fromIsObtuse : 0;
-                            let isToObtuse = Math.sign(cosTo) == -1 ? toIsObtuse : 0;
-                            let bitResult = isCurrObtuse | isFromObtuse | isToObtuse;
+                            const resultGeoLoc = getLocOverTheLine(currLat, currLong ,value.fromNode, value.toNode)
                             
-                            let verticalLeng;
-                            let horizontalLeng;
-                            let resultGeoLoc;
-                            //console.log(value.name + "|||||||||||||");
-                            if(bitResult == currIsObtuse || bitResult == 0){
-                               // console.log("bitResult" , bitResult)
-                                let tempHalfLengthFrom = cosFrom * distFrom2CurrLoc;
-                                verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(tempHalfLengthFrom));
-                                //console.log(verticalLeng);
-                                //console.log(tempHalfLengthFrom);
-                                let horizontalLengFrom = tempHalfLengthFrom;
-                                resultGeoLoc = getIntrapolationPoint(distTo2From - tempHalfLengthFrom, tempHalfLengthFrom, value.toNode, value.fromNode);
-                            }else if(bitResult == fromIsObtuse){
-                                //console.log("bitResult ", bitResult);
-                                horizontalLeng = cosTo * distTo2CurrLoc;
-                                verticalLeng = Math.sqrt(getSquare(distTo2CurrLoc) - getSquare(verticalLeng));
-                                                                    //close far
-                                resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, value.fromNode, value.toNode);
-                            }else if(bitResult == toIsObtuse){
-                                //console.log("bitResult ", bitResult);
-                                horizontalLeng = cosFrom * distFrom2CurrLoc;
-                                verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(verticalLeng));
-                                resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, value.toNode, value.fromNode);
-                            //둔각이 없다!
-                            }
-                            //console.log(resultGeoLoc);
-                            //삼각형 그리기
-                            // if(isFirstEncounter){
-                            //     isFirstEncounter = false;
-                            //     const polygonPath = [
-                            //         new kakao.maps.LatLng(currLat, currLong),
-                            //         new kakao.maps.LatLng(value.fromNode.latitude, value.fromNode.longitude),
-                            //         new kakao.maps.LatLng(value.toNode.latitude, value.toNode.longitude)
-                            //     ]
-                            //     const polygon = new kakao.maps.Polygon({
-                            //         path : polygonPath,
-                            //         strokeWeight : 3,
-                            //         strokeColor : '#39DE2A',
-                            //         strokeOpacity : 0.8,
-                            //         strokeStyle : 'longdash',
-                            //         fillColor : "#A2FF99",
-                            //         fillOpacity : 0.7
-                            //     })
-                            //     polygon.setMap(map);
-                            // }
-                            // const newDot = new kakao.maps.Circle({
-                            //     center : resultGeoLoc.toKakoLatLng(),
-                            //     radius : 8,
-                            //     strokeWeight: 3, // 선의 두께입니다 
-                            //     strokeColor: '#FE2E64', // 선의 색깔입니다
-                            //     strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                            //     strokeStyle: 'dashed', // 선의 스타일 입니다
-                            //     fillColor: '#FE2E64', // 채우기 색깔입니다
-                            //     fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                            // })
-                            // console.log(resultGeoLoc.latitude, resultGeoLoc.longitude)
-                            // newDot.setMap(map);
                             const distToCurr = calDist2Nodes(new myGeoLoc(currLat, currLong), resultGeoLoc);
                             if(distToCurr < closestDist ){
                                 closestDist = distToCurr;
@@ -643,32 +338,151 @@
                             }
                         }
                         //for ends
-                        if(movingCircle){
-                            movingCircle.setMap(null)
+                        
+                        isInit = false;
+                        startNode = closestNode;
+                        currLine.startNode = tempStartNode;
+                        currLine.endNode = tempEndNode;
+                        currLine.nodeName = tempKey;
+                        
+                        if(!movingCircle){
+                            
+                            movingCircle = new kakao.maps.Circle({
+                                center : closestNode.toKakoLatLng(),
+                                radius: 12, // 미터 단위의 원의 반지름입니다 
+                                strokeWeight: 3, // 선의 두께입니다 
+                                strokeColor: '#111111', // 선의 색깔입니다
+                                strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                                strokeStyle: 'dashed', // 선의 스타일 입니다
+                                fillColor: '#111111', // 채우기 색깔입니다
+                                fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                            })
+                            movingCircle.setMap(map);
+                        }else{
+                            movingCircle.setPosition(closestNode.toKakoLatLng())
                         }
-                        if(isInit){
-                            isInit = false;
-                            startNode = closestNode;
-                            currLine.startNode = tempStartNode;
-                            currLine.endNode = tempEndNode;
-                            currLine.nodeName = tempKey;
+                    }
+
+                    //init 이 끝난 후...
+                    if(!isInit){
+                        const resultGeoLoc = getLocOverTheLine(currLat, currLong, currLine.startNode, currLine.endNode)
+                        
+                        const fromLat = currLine.startNode.latitude;
+                        const fromLng = currLine.startNode.longitude;
+                        const toLat = currLine.endNode.latitude;
+                        const toLng = currLine.endNode.longitude;
+                        const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, fromLat, fromLng);
+                        const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, toLat, toLng);
+                        const distTo2From = getDistanceFromDeg(fromLat, fromLng, toLat, toLng)
+
+                        // //middle...
+                        const distMiddel2Curr = getDistanceFromDeg(currLat, currLong, (fromLat + toLat)/2, (fromLng + toLng)/2)
+
+                        const bit_from = distFrom2CurrLoc > bufferRange_outOfRange ? 1 << 2 : 0;
+                        const bit_to = distTo2CurrLoc > bufferRange_outOfRange ? 1 << 3 : 0;
+                        const bit_middle = distMiddel2Curr > bufferRange_outOfRange ? 1 << 4 : 0;
+                        const bit_result = bit_from | bit_to | bit_middle;
+                        const valid_bit_field = [4, 8, 12, 16, 20, 24, 28];
+                        if(bit_result == 28){
+                            console.log(distFrom2CurrLoc > bufferRange_outOfRange ? "too Far from FromNode" : '');
+                            console.log(distTo2CurrLoc > bufferRange_outOfRange ? "too far from toNode" : '');
+                            console.log(distMiddel2Curr > bufferRange_outOfRange ? "too far from middleNode" : '');
+                            alert("You are out of range");
+                            navigator.geolocation.clearWatch(watchID);
+                        }else{
+                            if(!movingCircle){
+                                movingCircle = new kakao.maps.Circle({
+                                    center : resultGeoLoc.toKakoLatLng(),
+                                    radius: 12, // 미터 단위의 원의 반지름입니다 
+                                    strokeWeight: 3, // 선의 두께입니다 
+                                    strokeColor: '#111111', // 선의 색깔입니다
+                                    strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+                                    strokeStyle: 'dashed', // 선의 스타일 입니다
+                                    fillColor: '#111111', // 채우기 색깔입니다
+                                    fillOpacity: 0.7  // 채우기 불투명도 입니다 
+                                })
+                                movingCircle.setMap(map);
+                            }else{
+                                movingCircle.setPosition(resultGeoLoc.toKakoLatLng());
+                            }
                         }
-                        movingCircle = new kakao.maps.Circle({
-                            center : closestNode.toKakoLatLng(),
-                            radius: 12, // 미터 단위의 원의 반지름입니다 
-                            strokeWeight: 3, // 선의 두께입니다 
-                            strokeColor: '#111111', // 선의 색깔입니다
-                            strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
-                            strokeStyle: 'dashed', // 선의 스타일 입니다
-                            fillColor: '#111111', // 채우기 색깔입니다
-                            fillOpacity: 0.7  // 채우기 불투명도 입니다 
-                        })
-                        movingCircle.setMap(map);
+
+                        //check 각 선분의 끝에 도달하였는지
+                        let distResult2End = getDistanceFromDeg(resultGeoLoc.latitude, resultGeoLoc.longitude, currLine.endNode.latitude, currLine.endNode.longitude);
+                        if(distResult2End <= bufferRange_endOfLine){
+                            isEndOfLine = true;
+                        }
+                    }
+
+                    if(isEndOfLine){
+                        const nodeIdx = Number(currLine.nodeName.split("-")[1]) + 1;
+                        if(lineNodes.has("node-" + nodeIdx)){
+                            const nextValue = lineNodes.get("node-" + nodeIdx);
+                            currLine.startNode = nextValue.fromNode;
+                            currLine.endNode = nextValue.toNode;
+                            currLine.nodeName = "node-" + nodeIdx;
+                            ;
+                        }else{
+                            alert("길찾기 종료!")
+                            navigator.geolocation.clearWatch(watchID);
+                        }
+                        isEndOfLine = false;
                     }
                 })
             }
         }
     }
+    function getLocOverTheLine(currLat, currLong, fromNode, toNode){
+        const fromLat = fromNode.latitude;
+        const fromLng = fromNode.longitude;
+        const toLat = toNode.latitude;
+        const toLng = toNode.longitude;
+        const distFrom2CurrLoc = getDistanceFromDeg(currLat, currLong, fromLat, fromLng);
+        const distTo2CurrLoc = getDistanceFromDeg(currLat, currLong, toLat, toLng);
+        const distTo2From = getDistanceFromDeg(fromLat, fromLng, toLat, toLng)
+
+        //middle...
+        const distMiddel2Curr = getDistanceFromDeg(currLat, currLong, (fromLat + toLat)/2, (fromLng + toLng)/2)
+
+        const cosCurrLoc = getCosFrom3Length(distFrom2CurrLoc, distTo2CurrLoc, distTo2From);
+        const cosFrom = getCosFrom3Length(distFrom2CurrLoc, distTo2From, distTo2CurrLoc);
+        const cosTo = getCosFrom3Length(distTo2CurrLoc, distTo2From, distFrom2CurrLoc);
+
+        const currIsObtuse = 1 << 2;
+        const fromIsObtuse = 1 << 3;
+        const toIsObtuse = 1 << 4; 
+        let isCurrObtuse = Math.sign(cosCurrLoc) == -1 ? currIsObtuse : 0;
+        let isFromObtuse = Math.sign(cosFrom) == -1 ? fromIsObtuse : 0;
+        let isToObtuse = Math.sign(cosTo) == -1 ? toIsObtuse : 0;
+        let bitResult = isCurrObtuse | isFromObtuse | isToObtuse;
+        
+        let verticalLeng;
+        let horizontalLeng;
+        let resultGeoLoc;
+
+        if(bitResult == currIsObtuse || bitResult == 0){
+            let tempHalfLengthFrom = cosFrom * distFrom2CurrLoc;
+            verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(tempHalfLengthFrom));
+            let horizontalLengFrom = tempHalfLengthFrom;
+
+            resultGeoLoc = getIntrapolationPoint(distTo2From - tempHalfLengthFrom, tempHalfLengthFrom, toNode, fromNode);
+
+        }else if(bitResult == fromIsObtuse){
+            horizontalLeng = cosTo * distTo2CurrLoc;
+            verticalLeng = Math.sqrt(getSquare(distTo2CurrLoc) - getSquare(verticalLeng));
+                                                //close far
+            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, fromNode, toNode);
+        }else if(bitResult == toIsObtuse){
+            horizontalLeng = cosFrom * distFrom2CurrLoc;
+            verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(verticalLeng));
+
+            resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, toNode, fromNode);
+        }
+        return resultGeoLoc;
+    }
+
+    //수학 함수들...
+    //두 myGeoLoc에서 거리 구하기
     function calDist2Nodes(fromGeoLoc, toGeoLoc){
         const theRadius = 6371e3; // earth as meters
         const dLat = deg2Rad(toGeoLoc.latitude - fromGeoLoc.latitude);
@@ -682,9 +496,11 @@
         return dist;
 
     }
+    //도(degree) <-> radian
     function deg2Rad(deg){
         return deg * (Math.PI / 180)
     }
+    //radian으로부터 거리 구하기
     function getDistanceFromDeg(lat1, long1, lat2, long2){
         const theRadius = 6371e3; // earth as meters
         const dLat = Math.abs(deg2Rad(lat2 - lat1));
@@ -707,6 +523,7 @@
 
     //     return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
     // }
+    //두 좌표간의 거리 구하기
     function getDist2Coords(x1, y1, x2, y2){
         return Math.sqrt(getSquare(x1 - x2) + getSquare(y1 - y2))
     }
@@ -714,6 +531,7 @@
         return num * num;
     }
     // x --- far ---- y --- close ---z
+    //외분점 구하기
     function getExtrapolationPoint(close, far, closeGeoLoc, farGeoLoc){   
         let destLat;
         let destLng;
@@ -724,6 +542,7 @@
         return new myGeoLoc(destLat, destLng);
     }
     //x ----far --- z -----close - y
+    //내분점 구하기
     function getIntrapolationPoint(close, far, closeGeoLoc, farGeoLoc){
         let destLat;
         let destLng;
@@ -741,5 +560,6 @@
         console.assert(d2 != 0);
         return (getSquare(d1) + getSquare(d2) - getSquare(d3)) / (2 * d1 * d2)
     }
+    
 </script>
 </html>
