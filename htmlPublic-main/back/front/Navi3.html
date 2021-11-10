@@ -173,7 +173,7 @@
         fromMarker.setMap(map);
 
         //add Event Listener
-        document.getElementById("findPath").addEventListener("click", function(event){
+        //document.getElementById("findPath").addEventListener("click", function(event){
             if(movingLoc.isNotEmpty() && fromGeoLoc.isNotEmpty()){
                 //#apiKey #카카오api #키
                 const apiKey = 'e9c5a05e82a299bcb079763ee5535cf3'
@@ -278,7 +278,7 @@
                     console.error(error);
                 })
             }
-        })
+        //})
 
         //add Event Listener end
     }
@@ -562,8 +562,8 @@
         return (getSquare(d1) + getSquare(d2) - getSquare(d3)) / (2 * d1 * d2)
     }
 
-    document.addEventListener("DOMContentLoaded",  function(){
-            document.getElementById("findPath").click();
-    })
+    // document.addEventListener("DOMContentLoaded",  function(){
+    //         document.getElementById("findPath").click();
+    // })
 </script>
 </html>
