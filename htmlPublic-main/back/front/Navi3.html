@@ -18,6 +18,14 @@
 <!-- <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf"></script> -->
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c8887de0523d3c8d404b5f0215802bdf&libraries=services,drawing"></script>
 <script>
+    //2021-11-08 ~ 2021-11-10
+    //작성자 JHS
+    //TODO
+    //1.전역 변수들 제거
+    //2.오차 보정 알고리즘 보완
+    //3.선분으로만 구성된 경우 잘 작동하지만 (우회전, 좌회전)으로 구성된 경우 오작동 하는 문제 수정해야 합니다.
+    //4.전체를 감싸서 사용하기 좋게 만들기
+
     class myGeoLoc{
         #latitude;
         #longitude;
@@ -35,7 +43,7 @@
         }
         set latitude(latitude){
             if(this.#isMutable || !this.#islatitudeInit){
-                this.#latitude = latitude
+                this.#latitude = latitude;
                 this.#islatitudeInit = true;
             }
         }
@@ -251,7 +259,8 @@
                     //127.03242228126089 37.498814120051456
                     
                     fnInitMovingCircle(linePath, nodeInfos);
-                    //아래 코드는 line의 시작 노드와 끝 노드를 맵에 표시하는 코드입니다....
+                    //아래 코드는 각 line의 시작 노드와 끝 노드를 맵에 표시하는 코드입니다....
+                    //디버깅시 도움이 되므로 남겨놓습니다.
                     // for([key, value] of nodeInfos){
                     //     let color = "#161616"
                     //     let tempDot = new kakao.maps.Circle({
@@ -313,6 +322,7 @@
     let tempEndNode;
     const bufferRange_baseOutOfRange = 15;
     const bufferRange_endOfLine = 5;
+    let isOutOfLinePoint = false;
     function drawClosestNode(currLat, currLong, lineNodes, accuracy){
         if(polyline){
             if(!closestNodeTimer){
@@ -387,6 +397,7 @@
                         const bit_result = bit_from | bit_to | bit_middle;
                         
                         if(bit_result == 28){
+                        
                             alert("You are out of range! 길찾기가 종료됩니다!");
                             navigator.geolocation.clearWatch(watchID);
                         }else{
@@ -403,7 +414,9 @@
                                 })
                                 movingCircle.setMap(map);
                             }else{
-                                movingCircle.setPosition(resultGeoLoc.toKakoLatLng());
+                                if(!isOutOfLinePoint){
+                                    movingCircle.setPosition(resultGeoLoc.toKakoLatLng());
+                                }
                             }
                         }
 
@@ -421,7 +434,7 @@
                             currLine.startNode = nextValue.fromNode;
                             currLine.endNode = nextValue.toNode;
                             currLine.nodeName = "node-" + nodeIdx;
-                            ;
+                            
                         }else{
                             alert("길찾기 종료!")
                             navigator.geolocation.clearWatch(watchID);
@@ -466,17 +479,19 @@
             let horizontalLengFrom = tempHalfLengthFrom;
 
             resultGeoLoc = getIntrapolationPoint(distTo2From - tempHalfLengthFrom, tempHalfLengthFrom, toNode, fromNode);
-
+            isOutOfLinePoint = false;
         }else if(bitResult == fromIsObtuse){
             horizontalLeng = cosTo * distTo2CurrLoc;
             verticalLeng = Math.sqrt(getSquare(distTo2CurrLoc) - getSquare(verticalLeng));
                                                 //close far
             resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, fromNode, toNode);
+            isOutOfLinePoint = true;
         }else if(bitResult == toIsObtuse){
             horizontalLeng = cosFrom * distFrom2CurrLoc;
             verticalLeng = Math.sqrt(getSquare(distFrom2CurrLoc) - getSquare(verticalLeng));
 
             resultGeoLoc = getExtrapolationPoint(horizontalLeng - distTo2From, horizontalLeng, toNode, fromNode);
+            isOutOfLinePoint = true;
         }
         return resultGeoLoc;
     }
