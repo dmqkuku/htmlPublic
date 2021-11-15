@@ -15,10 +15,10 @@ if(!__dirname){
     __dirname = path.resolve();
 }
 
+//app.get("/", (request, response) => {
+//    response.sendFile(path.join(__dirname + "/front/index.html"));
+//})
 app.get("/", (request, response) => {
-    response.sendFile(path.join(__dirname + "/front/index.html"));
-})
-app.get("/index", (request, response) => {
     response.sendFile(path.join(__dirname + "/front/Navi3.html"));
 })
 
